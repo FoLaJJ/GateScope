@@ -35,7 +35,9 @@ web/dist/
 web/tsconfig.tsbuildinfo
 
 # Documentation (internal design docs)
-docs/
+docs/*
+!docs/screenshots/
+!docs/screenshots/*.png
 
 # Environment & secrets
 .env.local

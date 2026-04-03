@@ -1,330 +1,129 @@
 # GateScope
 
-[中文文档](README.zh-CN.md)
+[English](README.en.md)
 
-**Independent AI Agent Exposure Discovery & Security Audit Platform**
+独立维护的 AI Agent 暴露面发现与漏洞审计项目，基于 `AutoScan/agentscan` 做了面向实战落地的一轮增强，而不是简单换名。
 
-> Detect, fingerprint, and assess exposed AI Agent instances across your network — from LAN to the public internet.
+当前维护仓库：
+- `https://github.com/FoLaJJ/GateScope`
 
----
+上游原仓库：
+- `https://github.com/AutoScan/agentscan`
 
-## Why GateScope?
+许可证：
+- `MIT`
 
-In early 2026, platforms like OpenClaw, clawhive, GoGogot, Hermes Agent, and Pincer exploded in popularity. Non-technical users deployed AI agents on personal machines with high privileges and default configs, creating a massive attack surface:
+归属和衍生说明：
+- 见 [NOTICE](NOTICE)
 
-- **42,000+** OpenClaw instances exposed on the public internet, 93% with auth bypass
-- **Default bind `0.0.0.0:18789`**, 85% directly reachable from the internet
-- **341+ malicious skill packages** poisoning the official marketplace
-- **1.5M API tokens leaked**, 35K user emails exposed
-- Government agencies in China issued formal security advisories; banks and state enterprises banned usage
+## 这次 fork 主要改了什么
 
-GateScope provides organizations with end-to-end AI Agent exposure discovery, vulnerability detection, and compliance auditing.
+- 增加一站式控制脚本 `./agentscanctl`，统一安装、构建、启动、停止、重启、状态、日志、环境检查、数据库备份、清理、重置。
+- 保留 `./gatescopectl` 作为别名包装，但文档默认以 `agentscanctl` 为主。
+- 修复前端 `/index.html` 持续 `301` 跳转的问题。
+- 登录页默认回填账号密码，网页端可直接一键登录。
+- 扫描任务事件改为可持久化和历史回放，任务结束后不再出现“事件为 0”的空白体验。
+- 网页端任务详情和漏洞页补充 IP、端口、Agent 类型、版本、认证方式、证据详情，直接能看到“哪个 IP 有哪个漏洞”。
+- Excel 导出补全漏洞与资产归属，并保留更完整的证据字段。
+- OpenClaw 漏洞库改为 YAML 外置维护，便于后续持续新增。
+- 相同资产下同一 CVE 命中时，PoC 实证结果优先于纯版本命中。
+- 页面中增加规则库元数据，能直接看到漏洞库截止日期和规则规模。
 
-## Features
+## OpenClaw 规则库状态
 
-- **Layered Scanning** — L1 port discovery → L2 fingerprinting → L3 vulnerability verification
-- **Multi-Agent Support** — OpenClaw (all versions) + clawhive + GoGogot + Hermes + Pincer
-- **CVE Detection** — OpenClaw CVE rule set + auth bypass checks + Skills enumeration + PoC validation
-- **Real-time Dashboard** — React + ECharts with WebSocket live updates
-- **Task Management** — One-time, scheduled (cron), and recurring scan tasks
-- **Alert Engine** — Configurable rules with Webhook notification + DB-persisted history
-- **Excel Reports** — 4-sheet export (summary, assets, vulnerabilities, remediation)
-- **Threat Intelligence** — FOFA integration for internet-scale discovery
-- **GeoIP Ready** — MaxMind GeoLite2 interface for region-based scanning
+- 当前规则更新时间：`2026-04-03`
+- 上游核对截止：`2026-04-02`
+- 当前 OpenClaw CVE 规则：`36`
+- 当前本地 PoC 规则：`4`
+- 相比上游当前内置的 `7` 条 OpenClaw CVE，当前 fork 已扩展到 `36` 条，净增 `29` 条
 
-## Fork Change Notice
+当前 CVE 严重等级分布：
+- `critical`: `8`
+- `high`: `18`
+- `medium`: `9`
+- `low`: `1`
 
-This fork keeps the upstream project structure and primary workflows intact. The changes below are additive customizations made for field use and operator convenience rather than a redesign of the original project.
-
-### Fork-specific additions in this branch
-
-- Added a unified `./agentscanctl` control entrypoint for install, build, start, stop, restart, status, logs, environment inspection, DB backup, DB cleanup, and DB reset.
-- Added `./gatescopectl` as a branding-friendly wrapper while keeping `agentscanctl` for compatibility.
-- Added forwarding wrapper scripts under `scripts/` so existing habits remain usable while `agentscanctl` becomes the primary control surface.
-- Fixed SPA asset routing behavior that previously caused repeated `301` redirects for `/index.html`.
-- Added login autofill behavior in the web UI so the configured default credentials can be submitted with a single click.
-- Added task event persistence and replay, so completed tasks can still show historical events instead of only live WebSocket messages.
-- Enhanced task and vulnerability pages to show direct asset context on the web UI, including IP, port, agent type, asset version, auth mode, and expandable evidence details.
-- Enhanced Excel export so vulnerability rows include direct asset attribution and no longer rely on report-only context to identify the affected host.
-- Preserved full evidence strings for new detections and report exports instead of truncating evidence at scan time.
-- Externalized OpenClaw detection data into YAML rule files under `configs/rules/` for easier maintenance.
-- Added rule catalog metadata, including rule update date, upstream verification cutoff, rule counts, and consistency checks.
-- Added PoC/CVE normalization logic so PoC entries with `cve_id` inherit severity, CVSS, and remediation from the matching CVE rule to reduce drift.
-- Adjusted duplicate handling so PoC-confirmed findings take priority over version-only matches for the same asset and CVE.
-
-### Current OpenClaw rule coverage in this fork
-
-- Rule catalog metadata is exposed in the UI and API.
-- Current rule metadata in this branch:
-  - Rule update date: `2026-04-03`
-  - Upstream verification cutoff: `2026-04-02`
-  - OpenClaw CVE rules: `36`
-  - PoC rules: `4`
-- Version-match evidence uses `local_poc_rule=available` to indicate that a local PoC rule exists for the CVE. It does not claim that an independently verified public exploit is universally available.
-
-### Documentation scope
-
-- This README now documents fork-specific operational changes and detection-rule behavior.
-- Upstream architecture, original module layout, and general build flow are intentionally left in place.
-
-## Quick Start
-
-### Prerequisites
-
-- Go 1.23+ (with CGO enabled for SQLite)
-- Node.js 18+ (for frontend)
-
-### 1. Clone
-
-```bash
-git clone <your-repository-url> GateScope
-cd GateScope
-```
-
-### 2. Configure
-
-```bash
-cp configs/config.yaml.example _data/config.yaml
-# Edit _data/config.yaml as needed
-```
-
-### 3. Run Backend
-
-```bash
-go run cmd/agentscan/main.go server
-```
-
-### 4. Run Frontend (development)
-
-```bash
-cd web && npm install && npm run dev
-```
-
-### 5. Login
-
-Open `http://localhost:5173` and sign in with:
-- Username: `admin`
-- Password: `agentscan`
-
-### One-command runtime control
-
-For packaged or long-running usage, prefer the unified control script:
-
-```bash
-./gatescopectl install
-./gatescopectl start
-./gatescopectl status
-./gatescopectl logs --lines 200
-./gatescopectl stop
-```
-
-Main supported actions include:
-
-- `install`
-- `build`
-- `start`
-- `stop`
-- `restart`
-- `status`
-- `logs`
-- `env`
-- `doctor`
-- `backup-db`
-- `cleanup-db`
-- `reset-db`
-
-### Quick Start with Docker
-
-```bash
-docker run -d --name agentscan -p 8080:8080 \
-  -v agentscan-data:/data \
-  -e AGENTSCAN_AUTH_JWT_SECRET=my-secret \
-  ghcr.io/autoscan/agentscan:latest
-```
-
-Or use Docker Compose:
-
-```bash
-curl -O <your-published-repository>/docker-compose.yml
-docker compose up -d
-```
-
-Open `http://localhost:8080`.
-
-### Run a Scan (CLI)
-
-```bash
-go run cmd/agentscan/main.go scan --targets 192.168.1.0/24
-```
-
-## Architecture
-
-```
-┌─────────────┐     ┌──────────────────────────────────────────┐
-│  React SPA  │────▶│  Gin REST API + WebSocket                │
-│  Ant Design │◀────│  JWT Auth · CORS · RequestID · AccessLog │
-│  ECharts    │     └──────────┬───────────────────────────────┘
-└─────────────┘                │
-                    ┌──────────▼───────────────┐
-                    │    Scan Pipeline Engine   │
-                    │  L1 Port → L2 FP → L3 Vuln│
-                    └──────────┬───────────────┘
-                               │
-              ┌────────────────┼────────────────┐
-              ▼                ▼                ▼
-        ┌──────────┐   ┌───────────┐   ┌──────────────┐
-        │  EventBus │   │   Store   │   │  Alert Engine│
-        │ (pub/sub) │   │(GORM/SQL) │   │  (Webhook)   │
-        └──────────┘   └───────────┘   └──────────────┘
-```
-
-### Scan Layers
-
-| Layer | Purpose | Implementation |
-|-------|---------|----------------|
-| **L1** | Port discovery | TCP CONNECT scan, configurable concurrency |
-| **L2** | Fingerprinting | HTTP/WebSocket/mDNS probes, agent type identification |
-| **L3** | Vulnerability check | CVE matching, auth bypass, Skills enum, PoC |
-
-## Tech Stack
-
-| Component | Technology |
-|-----------|-----------|
-| Backend | Go 1.23 · Gin · GORM · Cobra · Viper · zap |
-| Frontend | React 18 · TypeScript · Ant Design · ECharts · Zustand · TanStack Query |
-| Database | SQLite (dev) / PostgreSQL (prod) |
-| Build | `go build` (backend) · Vite (frontend) |
-
-## Project Structure
-
-```
-GateScope/
-├── cmd/agentscan/          # CLI entry (server/scan/migrate/version)
-├── cmd/mock-openclaw/      # Mock target server for testing
-├── configs/                # Config template (config.yaml.example)
-├── _data/                  # Runtime data — db & config (gitignored)
-├── internal/
-│   ├── core/               # Infrastructure (config, eventbus, logger)
-│   ├── utils/              # Pure utilities (iputil, version)
-│   ├── models/             # GORM data models
-│   ├── store/              # Persistence layer (SQLite/PostgreSQL)
-│   ├── scanner/l1/         # TCP port scanner
-│   ├── scanner/l2/         # HTTP/WS/mDNS fingerprinting
-│   ├── scanner/l3/         # CVE/Auth/Skills/PoC checks
-│   ├── engine/             # L1→L2→L3 pipeline orchestration
-│   ├── api/                # REST API + WebSocket
-│   ├── auth/               # JWT authentication
-│   ├── task/               # Task manager + cron scheduler
-│   ├── alert/              # Alert engine
-│   ├── report/             # Excel report generator
-│   ├── intel/              # FOFA threat intelligence
-│   └── geoip/              # GeoIP service
-├── web/                    # React frontend
-├── AGENTS.md               # AI coding assistant guidelines
-└── scripts/                # Utility scripts
-```
-
-## Configuration
-
-GateScope uses [Viper](https://github.com/spf13/viper) for configuration with the following priority:
-
-1. CLI flags (`--config path/to/config.yaml`)
-2. Environment variables (`AGENTSCAN_SERVER_PORT=9090`)
-3. Config file (searched in `./`, `./configs/`, `./_data/`, `/etc/agentscan/`)
-4. Built-in defaults
-
-See `configs/config.yaml.example` for all available options.
-
-## Rule Data
-
-OpenClaw rule data in this fork is primarily maintained as YAML and loaded at runtime:
-
+规则文件位置：
 - `configs/rules/openclaw-cves.yaml`
 - `configs/rules/pocs.yaml`
 - `configs/rules/skills.yaml`
 
-Operational notes:
+规则判断原则：
+- 优先使用 PoC 实证结果，保证更客观
+- 其次才使用版本号命中
+- PoC 规则带 `cve_id` 时，会继承对应 CVE 的严重等级、CVSS 和修复建议，避免同一漏洞多套口径
 
-- CVE matching is version-based when a target version is available.
-- PoC validation is handled separately and can override version-only findings for the same asset/CVE pair.
-- Rule metadata is surfaced via the API and UI so operators can see the effective update date and verification cutoff.
+## 页面展示
 
-## Development
+登录页：
+
+![GateScope Login](docs/screenshots/login.png)
+
+扫描任务页：
+
+![GateScope Tasks](docs/screenshots/tasks.png)
+
+漏洞列表页：
+
+![GateScope Vulnerabilities](docs/screenshots/vulnerabilities.png)
+
+## 一键运行
+
+1. 克隆仓库
 
 ```bash
-make build        # Build frontend + backend (single binary → bin/agentscan)
-make dev          # Run backend (go run or air)
-make dev-web      # Run frontend Vite dev server
-make dev-all      # Run both in parallel
-make test         # go test ./...
-make lint         # go vet ./...
-make docker       # Build Docker image locally
-make help         # Show all targets
+git clone https://github.com/FoLaJJ/GateScope.git
+cd GateScope
 ```
 
-### Docker
+2. 准备配置
 
 ```bash
-# Build locally
-make docker
-
-# Run with docker-compose
-docker compose up -d
-
-# Stop
-docker compose down
+cp configs/config.yaml.example _data/config.yaml
 ```
 
-The Docker image is a multi-stage build producing a ~30 MB Alpine image with the frontend embedded.
-Data is stored in the `/data` volume. Configure via environment variables (`AGENTSCAN_*`).
+3. 一站式控制
 
-## Roadmap
+```bash
+./agentscanctl install
+./agentscanctl start
+./agentscanctl status
+./agentscanctl logs --lines 200
+./agentscanctl stop
+```
 
-| Phase | Focus | Status |
-|-------|-------|--------|
-| **P1** | L1/L2/L3 scan pipeline, REST API, React dashboard, JWT auth, task management, alerts, Excel reports | Done |
-| **P2** | SYN scan, concurrent L2, YAML fingerprint/CVE databases, RBAC, rate limiting, Prometheus metrics, health checks | Planned |
-| **P3** | Redis EventBus, ClickHouse time-series, PDF/Word reports, Swagger/OpenAPI | Planned |
-| **P4** | Distributed workers (gRPC), multi-tenancy, SSO (LDAP/OAuth2), asset groups, compliance templates, i18n | Future |
+常用附加动作：
 
-## Contributing
+```bash
+./agentscanctl restart
+./agentscanctl backup-db
+./agentscanctl cleanup-db
+./agentscanctl reset-db
+./agentscanctl doctor
+./agentscanctl env
+```
 
-Contributions are welcome. Please:
+别名入口：
 
-1. Fork the repository
-2. Create a feature branch (`git checkout -b feature/amazing-feature`)
-3. Run `go build ./...` and `go test ./...` before committing
-4. Use descriptive commit messages (`module: action description`)
-5. Open a Pull Request
+```bash
+./gatescopectl start
+```
 
-## License
+默认登录信息：
+- 用户名：`admin`
+- 密码：`agentscan`
 
-[MIT](LICENSE)
+## 目录重点
 
-## Clean Packaging Note
+- `agentscanctl`: 一站式运维入口
+- `gatescopectl`: 对外别名入口
+- `configs/rules/`: OpenClaw 规则库
+- `internal/`: 后端核心逻辑
+- `web/`: 前端页面
+- `docs/screenshots/`: README 展示图
 
-When exporting this fork for delivery or local archival, exclude runtime and dependency artifacts such as:
+## 兼容性说明
 
-- `.git/`
-- `_data/`
-- `bin/`
-- `web/node_modules/`
-- `web/dist/`
-- `*.bak.*`
-- `*.backup`
-
-This keeps the release package focused on source, configuration templates, scripts, and documentation only.
-
-## Independent Project Note
-
-This repository is intended to be published and maintained as an independent project rather than an upstream merge branch.
-
-- Public-facing project name: `GateScope`
-- Upstream base: `AutoScan/agentscan`
-- License basis: `MIT`
-- Upstream attribution and derivative-work notes: see [NOTICE](NOTICE)
-
-Compatibility note:
-
-- Internal Go module imports may still reference `github.com/AutoScan/agentscan`.
-- This is intentional in the current release to reduce unnecessary refactor risk while keeping the project independently publishable.
+- 当前版本内部 Go module/import path 仍保留 `github.com/AutoScan/agentscan`
+- 这是有意保留的兼容策略，用来避免一次性大改带来的额外风险
+- 对外发布名、README、界面文案和交付方式已经按独立项目维护
