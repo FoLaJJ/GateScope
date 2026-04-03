@@ -9,10 +9,12 @@ import (
 	"strings"
 	"time"
 
+	"github.com/AutoScan/agentscan/internal/core/logger"
 	"github.com/AutoScan/agentscan/internal/models"
 	"github.com/AutoScan/agentscan/internal/store"
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
+	"go.uber.org/zap"
 )
 
 func (s *Server) handleListTaskEvents(c *gin.Context) {
@@ -49,7 +51,13 @@ func (s *Server) persistTaskEvent(ctx context.Context, topic string, payload any
 	if !ok {
 		return
 	}
-	_ = s.store.CreateTaskEvent(context.Background(), event)
+	if err := s.store.CreateTaskEvent(context.Background(), event); err != nil {
+		logger.Named("api").Warn("persist task event failed",
+			zap.String("topic", topic),
+			zap.String("task_id", event.TaskID),
+			zap.Error(err),
+		)
+	}
 }
 
 func (s *Server) buildTaskEvent(ctx context.Context, topic string, payload any, eventTime time.Time) (*models.TaskEvent, bool) {

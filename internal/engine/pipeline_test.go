@@ -16,6 +16,7 @@ import (
 	"github.com/AutoScan/agentscan/internal/core/eventbus"
 	"github.com/AutoScan/agentscan/internal/models"
 	"github.com/AutoScan/agentscan/internal/scanner/l1"
+	"github.com/AutoScan/agentscan/internal/scanner/l2"
 	"github.com/gorilla/websocket"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -456,4 +457,52 @@ func TestPipelineL1ScanModeSynFallsBackToConnect(t *testing.T) {
 	require.NoError(t, err)
 	assert.Equal(t, int64(1), atomic.LoadInt64(&synCalls))
 	assert.Equal(t, 1, result.OpenPorts)
+}
+
+func TestPipelineMDNSIgnoresEntriesOutsideExplicitTargets(t *testing.T) {
+	port, cleanup := startMockOpenClaw(t)
+	defer cleanup()
+	time.Sleep(100 * time.Millisecond)
+
+	originalBrowse := browseMDNSEntries
+	t.Cleanup(func() {
+		browseMDNSEntries = originalBrowse
+	})
+	browseMDNSEntries = func(timeout time.Duration) []l2.MDNSEntry {
+		return []l2.MDNSEntry{
+			{IP: "127.0.0.1", Port: port, Version: "2026.2.20", AgentID: "test-agent-001"},
+			{IP: "192.168.79.134", Port: 18789, Version: "2026.3.13", AgentID: "main"},
+		}
+	}
+
+	var (
+		mu         sync.Mutex
+		phaseTotal = map[string]int{}
+	)
+
+	pipeline := NewPipeline(eventbus.NewLocal())
+	pipeline.SetProgressCallback(func(scanned, total int, phase string) {
+		mu.Lock()
+		defer mu.Unlock()
+		if total > phaseTotal[phase] {
+			phaseTotal[phase] = total
+		}
+	})
+
+	result, err := pipeline.Run(context.Background(), "127.0.0.1", PipelineConfig{
+		Ports:       []int{port},
+		ScanDepth:   models.ScanDepthL2,
+		Timeout:     3 * time.Second,
+		Concurrency: 10,
+		EnableMDNS:  true,
+		TaskID:      "test-task",
+	})
+
+	require.NoError(t, err)
+	require.Len(t, result.Assets, 1)
+	assert.Equal(t, "127.0.0.1", result.Assets[0].IP)
+
+	mu.Lock()
+	defer mu.Unlock()
+	assert.Equal(t, 1, phaseTotal["l2"])
 }

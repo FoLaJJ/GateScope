@@ -3,10 +3,15 @@ import userEvent from '@testing-library/user-event'
 import { Route, Routes } from 'react-router-dom'
 import { describe, expect, it, vi } from 'vitest'
 import Vulnerabilities from './Vulnerabilities'
+import { useRuleCatalog } from '@/api/rules'
 import { useVulnList } from '@/api/vulns'
 import { makeVulnerability } from '@/test-utils/fixtures'
 import LocationDisplay from '@/test-utils/LocationDisplay'
 import { renderWithProviders } from '@/test-utils/render'
+
+vi.mock('@/api/rules', () => ({
+  useRuleCatalog: vi.fn(),
+}))
 
 vi.mock('@/api/vulns', () => ({
   useVulnList: vi.fn(),
@@ -15,6 +20,7 @@ vi.mock('@/api/vulns', () => ({
 describe('Vulnerabilities page', () => {
   it('updates URL search params when searching by CVE', async () => {
     const user = userEvent.setup()
+    vi.mocked(useRuleCatalog).mockReturnValue({ data: undefined } as never)
     vi.mocked(useVulnList).mockReturnValue({
       data: {
         data: [makeVulnerability()],
@@ -38,22 +44,23 @@ describe('Vulnerabilities page', () => {
       '/vulnerabilities',
     )
 
-    await user.type(screen.getByPlaceholderText('搜索CVE编号'), 'CVE-2026-4242{enter}')
+    await user.type(screen.getByPlaceholderText('搜索漏洞编号'), 'CVE-2026-4242{enter}')
 
     await waitFor(() => {
-      expect(screen.getByTestId('location-display')).toHaveTextContent('cve_id=CVE-2026-4242')
+      expect(screen.getByTestId('location-display')).toHaveTextContent('identifier=CVE-2026-4242')
     })
     expect(useVulnList).toHaveBeenLastCalledWith(
       expect.objectContaining({
-        cve_id: 'CVE-2026-4242',
+        identifier: 'CVE-2026-4242',
       }),
     )
   })
 
   it('renders expanded vulnerability details', async () => {
+    vi.mocked(useRuleCatalog).mockReturnValue({ data: undefined } as never)
     vi.mocked(useVulnList).mockReturnValue({
       data: {
-        data: [makeVulnerability({ description: '展开后的漏洞描述' })],
+        data: [makeVulnerability({ description: 'Expanded English description', description_zh: '展开后的中文漏洞描述' })],
         total: 1,
       },
       isLoading: false,
@@ -71,7 +78,8 @@ describe('Vulnerabilities page', () => {
 
     fireEvent.click(expandButton)
 
-    expect(await screen.findByText('展开后的漏洞描述')).toBeInTheDocument()
+    expect(await screen.findByText('展开后的中文漏洞描述')).toBeInTheDocument()
+    expect(screen.getByText('Expanded English description')).toBeInTheDocument()
     expect(screen.getAllByText('升级到最新版本')).toHaveLength(2)
   })
 })

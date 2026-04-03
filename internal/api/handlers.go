@@ -18,6 +18,7 @@ import (
 	"github.com/AutoScan/agentscan/internal/report"
 	"github.com/AutoScan/agentscan/internal/scanner/l3"
 	"github.com/AutoScan/agentscan/internal/store"
+	"github.com/AutoScan/agentscan/internal/utils/iputil"
 	"github.com/gin-gonic/gin"
 	"github.com/robfig/cron/v3"
 )
@@ -65,7 +66,7 @@ type createTaskRequest struct {
 	CronExpr    string `json:"cron_expr"`
 	Concurrency int    `json:"concurrency"`
 	Timeout     int    `json:"timeout"`
-	EnableMDNS  bool   `json:"enable_mdns"`
+	EnableMDNS  *bool  `json:"enable_mdns"`
 }
 
 func (s *Server) handleCreateTask(c *gin.Context) {
@@ -111,7 +112,10 @@ func (s *Server) handleCreateTask(c *gin.Context) {
 		ScanDepth:   models.ScanDepth(req.ScanDepth),
 		Concurrency: req.Concurrency,
 		Timeout:     req.Timeout,
-		EnableMDNS:  req.EnableMDNS,
+		EnableMDNS:  s.cfg.Scanner.EnableMDNS,
+	}
+	if req.EnableMDNS != nil {
+		t.EnableMDNS = *req.EnableMDNS
 	}
 	if t.ScanDepth == "" {
 		t.ScanDepth = models.ScanDepthL3
@@ -161,6 +165,152 @@ func (s *Server) handleGetTask(c *gin.Context) {
 		return
 	}
 	respondOK(c, task)
+}
+
+type taskTargetStatus struct {
+	Target     string           `json:"target"`
+	Status     string           `json:"status"`
+	StatusText string           `json:"status_text"`
+	Summary    string           `json:"summary"`
+	AssetID    string           `json:"asset_id,omitempty"`
+	IP         string           `json:"ip,omitempty"`
+	Port       int              `json:"port,omitempty"`
+	AgentType  string           `json:"agent_type,omitempty"`
+	Version    string           `json:"version,omitempty"`
+	AuthMode   string           `json:"auth_mode,omitempty"`
+	RiskLevel  models.RiskLevel `json:"risk_level,omitempty"`
+	Confidence float64          `json:"confidence,omitempty"`
+	VulnCount  int              `json:"vuln_count,omitempty"`
+}
+
+func (s *Server) handleGetTaskTargets(c *gin.Context) {
+	task, err := s.taskMgr.Get(c.Request.Context(), c.Param("id"))
+	if err != nil {
+		respondError(c, http.StatusNotFound, "task not found")
+		return
+	}
+
+	targets, err := iputil.ParseTargets(task.Targets)
+	if err != nil {
+		respondError(c, http.StatusBadRequest, "parse targets failed", err.Error())
+		return
+	}
+
+	assets, _, err := s.store.ListAssets(c.Request.Context(), store.AssetFilter{TaskID: task.ID, Limit: 10000})
+	if err != nil {
+		respondError(c, http.StatusInternalServerError, "list assets failed", err.Error())
+		return
+	}
+	vulns, _, err := s.store.ListVulnerabilities(c.Request.Context(), store.VulnFilter{TaskID: task.ID, Limit: 10000})
+	if err != nil {
+		respondError(c, http.StatusInternalServerError, "list vulns failed", err.Error())
+		return
+	}
+
+	vulnCountByAsset := make(map[string]int, len(vulns))
+	for _, vuln := range vulns {
+		vulnCountByAsset[vuln.AssetID]++
+	}
+
+	assetsByIP := make(map[string][]models.Asset)
+	for _, asset := range assets {
+		assetsByIP[asset.IP] = append(assetsByIP[asset.IP], asset)
+	}
+
+	statuses := make([]taskTargetStatus, 0, len(targets)+len(assets))
+	seenTargets := make(map[string]bool, len(targets))
+	for _, target := range targets {
+		if seenTargets[target] {
+			continue
+		}
+		seenTargets[target] = true
+
+		matchedAssets := assetsByIP[target]
+		if len(matchedAssets) == 0 {
+			statuses = append(statuses, taskTargetStatus{
+				Target:     target,
+				Status:     inferNonAssetStatus(task.Status),
+				StatusText: inferNonAssetStatusText(task.Status),
+				Summary:    inferNonAssetSummary(task.Status),
+				IP:         target,
+			})
+			continue
+		}
+
+		for _, asset := range matchedAssets {
+			statuses = append(statuses, taskTargetStatus{
+				Target:     target,
+				Status:     "identified",
+				StatusText: "已识别 Agent",
+				Summary:    fmt.Sprintf("已识别为 %s 资产", asset.AgentType),
+				AssetID:    asset.ID,
+				IP:         asset.IP,
+				Port:       asset.Port,
+				AgentType:  asset.AgentType,
+				Version:    asset.Version,
+				AuthMode:   asset.AuthMode,
+				RiskLevel:  asset.RiskLevel,
+				Confidence: asset.Confidence,
+				VulnCount:  vulnCountByAsset[asset.ID],
+			})
+		}
+	}
+
+	for _, asset := range assets {
+		if seenTargets[asset.IP] {
+			continue
+		}
+		statuses = append(statuses, taskTargetStatus{
+			Target:     asset.IP,
+			Status:     "out_of_scope",
+			StatusText: "不在原始目标中",
+			Summary:    "该资产不在任务原始目标中，通常属于历史脏数据或旧版 mDNS 误入结果。",
+			AssetID:    asset.ID,
+			IP:         asset.IP,
+			Port:       asset.Port,
+			AgentType:  asset.AgentType,
+			Version:    asset.Version,
+			AuthMode:   asset.AuthMode,
+			RiskLevel:  asset.RiskLevel,
+			Confidence: asset.Confidence,
+			VulnCount:  vulnCountByAsset[asset.ID],
+		})
+	}
+
+	respondOK(c, gin.H{"data": statuses, "total": len(statuses)})
+}
+
+func inferNonAssetStatus(status models.TaskStatus) string {
+	switch status {
+	case models.TaskStatusPending, models.TaskStatusPaused:
+		return "pending"
+	case models.TaskStatusRunning:
+		return "scanning"
+	default:
+		return "scanned_no_agent"
+	}
+}
+
+func inferNonAssetStatusText(status models.TaskStatus) string {
+	switch status {
+	case models.TaskStatusPending, models.TaskStatusPaused:
+		return "等待扫描"
+	case models.TaskStatusRunning:
+		return "扫描中"
+	default:
+		return "未识别 Agent"
+	}
+}
+
+func inferNonAssetSummary(status models.TaskStatus) string {
+	switch status {
+	case models.TaskStatusPending, models.TaskStatusPaused:
+		return "目标尚未开始扫描。"
+	case models.TaskStatusRunning:
+		return "目标正在扫描中，当前还没有识别结果。"
+	default:
+		return "目标已扫描，但未识别到受支持的 Agent。可能端口未开放，或服务不是受支持的 Agent。"
+	}
 }
 
 func (s *Server) handleDeleteTask(c *gin.Context) {
@@ -231,12 +381,13 @@ func (s *Server) handleGetAssetVulns(c *gin.Context) {
 func (s *Server) handleListVulns(c *gin.Context) {
 	page, limit, offset := getPagination(c)
 	filter := store.VulnFilter{
-		TaskID:    c.Query("task_id"),
-		AssetID:   c.Query("asset_id"),
-		CVEID:     c.Query("cve_id"),
-		CheckType: c.Query("check_type"),
-		Limit:     limit,
-		Offset:    offset,
+		TaskID:         c.Query("task_id"),
+		AssetID:        c.Query("asset_id"),
+		Identifier:     firstNonEmpty(c.Query("identifier"), c.Query("cve_id")),
+		IdentifierType: normalizeIdentifierType(c.Query("identifier_type")),
+		CheckType:      c.Query("check_type"),
+		Limit:          limit,
+		Offset:         offset,
 	}
 	if sev := c.Query("severity"); sev != "" {
 		s := models.Severity(sev)
@@ -258,6 +409,7 @@ func (s *Server) handleGetVuln(c *gin.Context) {
 		respondError(c, http.StatusNotFound, "vulnerability not found")
 		return
 	}
+	*vuln = l3.LocalizeVulnerability(*vuln)
 	views := s.hydrateVulnerabilityViews(c.Request.Context(), []models.Vulnerability{*vuln})
 	if len(views) == 0 {
 		respondOK(c, vuln)
@@ -289,6 +441,9 @@ func (s *Server) handleExportExcel(c *gin.Context) {
 
 	assets, _, _ := s.store.ListAssets(c.Request.Context(), store.AssetFilter{TaskID: taskID, Limit: 10000})
 	vulns, _, _ := s.store.ListVulnerabilities(c.Request.Context(), store.VulnFilter{TaskID: taskID, Limit: 10000})
+	for i := range vulns {
+		vulns[i] = l3.LocalizeVulnerability(vulns[i])
+	}
 
 	scanTime := t.CreatedAt
 	if t.StartedAt != nil {
@@ -347,6 +502,24 @@ func buildDownloadDisposition(filename string) string {
 	}
 
 	return fmt.Sprintf(`attachment; filename="%s"; filename*=UTF-8''%s`, fallbackName, url.PathEscape(base))
+}
+
+func firstNonEmpty(values ...string) string {
+	for _, value := range values {
+		if strings.TrimSpace(value) != "" {
+			return value
+		}
+	}
+	return ""
+}
+
+func normalizeIdentifierType(raw string) string {
+	switch strings.ToLower(strings.TrimSpace(raw)) {
+	case "cve", "cnnvd", "ghsa":
+		return strings.ToLower(strings.TrimSpace(raw))
+	default:
+		return ""
+	}
 }
 
 // --- Alert ---

@@ -2,6 +2,7 @@ package task
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"strconv"
 	"strings"
@@ -10,11 +11,13 @@ import (
 
 	"github.com/AutoScan/agentscan/internal/core/config"
 	"github.com/AutoScan/agentscan/internal/core/eventbus"
+	"github.com/AutoScan/agentscan/internal/core/logger"
 	"github.com/AutoScan/agentscan/internal/engine"
 	"github.com/AutoScan/agentscan/internal/models"
 	"github.com/AutoScan/agentscan/internal/store"
 	"github.com/AutoScan/agentscan/internal/utils/iputil"
 	"github.com/google/uuid"
+	"go.uber.org/zap"
 )
 
 type Manager struct {
@@ -118,6 +121,8 @@ func (m *Manager) Stop(id string) {
 }
 
 func (m *Manager) execute(ctx context.Context, task *models.Task) {
+	log := logger.Named("task_manager")
+
 	defer func() {
 		m.mu.Lock()
 		delete(m.running, task.ID)
@@ -148,7 +153,13 @@ func (m *Manager) execute(ctx context.Context, task *models.Task) {
 		if total > 0 {
 			task.ProgressPercent = float64(scanned) / float64(total) * 100
 		}
-		m.store.UpdateTask(context.Background(), task)
+		if err := m.store.UpdateTask(context.Background(), task); err != nil {
+			log.Warn("update task progress failed",
+				zap.String("task_id", task.ID),
+				zap.String("phase", phase),
+				zap.Error(err),
+			)
+		}
 
 		m.bus.Publish(ctx, eventbus.Event{
 			Topic: eventbus.TopicTaskProgress,
@@ -181,23 +192,95 @@ func (m *Manager) execute(ctx context.Context, task *models.Task) {
 
 	if result != nil {
 		task.OpenPorts = result.OpenPorts
-		task.FoundAgents = len(result.Assets)
-		task.FoundVulns = len(result.Vulnerabilities)
-
-		bgCtx := context.Background()
-		for i := range result.Assets {
-			m.store.UpsertAsset(bgCtx, &result.Assets[i])
-		}
-		for i := range result.Vulnerabilities {
-			m.store.CreateVulnerability(bgCtx, &result.Vulnerabilities[i])
+		persistedAssets, persistedVulns, persistErr := m.persistPipelineResult(context.Background(), task.ID, result)
+		task.FoundAgents = persistedAssets
+		task.FoundVulns = persistedVulns
+		if persistErr != nil {
+			task.Status = models.TaskStatusFailed
+			task.ErrorMessage = appendTaskError(task.ErrorMessage, persistErr.Error())
 		}
 	}
 
-	m.store.UpdateTask(context.Background(), task)
+	if err := m.store.UpdateTask(context.Background(), task); err != nil {
+		log.Error("final task update failed", zap.String("task_id", task.ID), zap.Error(err))
+	}
 	m.bus.Publish(context.Background(), eventbus.Event{
 		Topic:   eventbus.TopicTaskCompleted,
 		Payload: task,
 	})
+}
+
+func (m *Manager) persistPipelineResult(ctx context.Context, taskID string, result *engine.PipelineResult) (int, int, error) {
+	log := logger.Named("task_manager")
+	if result == nil {
+		return 0, 0, nil
+	}
+
+	assetIDMap := make(map[string]string, len(result.Assets))
+	var persistErrs []error
+	persistedAssets := 0
+
+	for i := range result.Assets {
+		originalID := result.Assets[i].ID
+		if err := m.store.UpsertAsset(ctx, &result.Assets[i]); err != nil {
+			log.Error("persist asset failed",
+				zap.String("task_id", taskID),
+				zap.String("asset_id", originalID),
+				zap.String("ip", result.Assets[i].IP),
+				zap.Int("port", result.Assets[i].Port),
+				zap.Error(err),
+			)
+			persistErrs = append(persistErrs, fmt.Errorf("persist asset %s:%d failed: %w", result.Assets[i].IP, result.Assets[i].Port, err))
+			continue
+		}
+		assetIDMap[originalID] = result.Assets[i].ID
+		persistedAssets++
+	}
+
+	persistedVulns := 0
+	for i := range result.Vulnerabilities {
+		mappedAssetID, ok := assetIDMap[result.Vulnerabilities[i].AssetID]
+		if !ok {
+			err := fmt.Errorf("skip vulnerability %s because asset %s was not persisted", result.Vulnerabilities[i].ID, result.Vulnerabilities[i].AssetID)
+			log.Warn("skip vulnerability for missing asset",
+				zap.String("task_id", taskID),
+				zap.String("vuln_id", result.Vulnerabilities[i].ID),
+				zap.String("asset_id", result.Vulnerabilities[i].AssetID),
+			)
+			persistErrs = append(persistErrs, err)
+			continue
+		}
+
+		result.Vulnerabilities[i].AssetID = mappedAssetID
+		if err := m.store.CreateVulnerability(ctx, &result.Vulnerabilities[i]); err != nil {
+			log.Error("persist vulnerability failed",
+				zap.String("task_id", taskID),
+				zap.String("vuln_id", result.Vulnerabilities[i].ID),
+				zap.String("asset_id", mappedAssetID),
+				zap.String("cve_id", result.Vulnerabilities[i].CVEID),
+				zap.Error(err),
+			)
+			persistErrs = append(persistErrs, fmt.Errorf("persist vulnerability %s failed: %w", result.Vulnerabilities[i].ID, err))
+			continue
+		}
+		persistedVulns++
+	}
+
+	return persistedAssets, persistedVulns, errors.Join(persistErrs...)
+}
+
+func appendTaskError(existing string, next string) string {
+	existing = strings.TrimSpace(existing)
+	next = strings.TrimSpace(next)
+
+	switch {
+	case existing == "":
+		return next
+	case next == "":
+		return existing
+	default:
+		return existing + "; " + next
+	}
 }
 
 func parsePorts(s string) []int {

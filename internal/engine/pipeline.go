@@ -71,6 +71,12 @@ type endpointRateLimiter struct {
 	next     time.Time
 }
 
+var browseMDNSEntries = func(timeout time.Duration) []l2.MDNSEntry {
+	prober := l2.NewMDNSProber(timeout)
+	entries, _ := prober.Browse()
+	return entries
+}
+
 var newTCPScanner = func(timeout time.Duration, concurrency int) portScanner {
 	return l1.NewTCPScanner(timeout, concurrency)
 }
@@ -92,11 +98,15 @@ func (p *Pipeline) Run(ctx context.Context, targets string, cfg PipelineConfig) 
 	if err != nil {
 		return nil, fmt.Errorf("parse targets: %w", err)
 	}
+	targetSet := make(map[string]struct{}, len(ips))
+	for _, ip := range ips {
+		targetSet[ip] = struct{}{}
+	}
 
 	result := &PipelineResult{TotalScanned: len(ips)}
 	ports := cfg.Ports
 	if len(ports) == 0 {
-		ports = []int{18789, 18792, 3000, 8080, 8888}
+		ports = []int{18789, 18790, 18792, 3000, 8080, 8888}
 	}
 	concurrency := normalizedConcurrency(cfg.Concurrency)
 
@@ -164,9 +174,11 @@ func (p *Pipeline) Run(ctx context.Context, targets string, cfg PipelineConfig) 
 		if mdnsTimeout == 0 {
 			mdnsTimeout = 5 * time.Second
 		}
-		prober := l2.NewMDNSProber(mdnsTimeout)
-		entries, _ := prober.Browse()
+		entries := browseMDNSEntries(mdnsTimeout)
 		for _, e := range entries {
+			if _, ok := targetSet[e.IP]; !ok {
+				continue
+			}
 			mdnsEntries[e.IP] = e
 		}
 	}

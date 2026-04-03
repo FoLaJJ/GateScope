@@ -1,7 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { request } from './client'
 import { buildQueryString, normalizeQueryParams } from '@/utils/query'
-import type { Task, TaskEvent, CreateTaskRequest, PaginatedResponse, TaskListParams } from '@/types'
+import type { Task, TaskEvent, TaskTargetStatus, CreateTaskRequest, PaginatedResponse, TaskListParams } from '@/types'
 
 export const taskKeys = {
   all: ['tasks'] as const,
@@ -9,6 +9,7 @@ export const taskKeys = {
   list: (params?: TaskListParams) => [...taskKeys.lists(), normalizeQueryParams(params)] as const,
   details: () => [...taskKeys.all, 'detail'] as const,
   detail: (id: string) => [...taskKeys.details(), id] as const,
+  targets: (id: string) => [...taskKeys.detail(id), 'targets'] as const,
   events: (id: string, limit = 200) => [...taskKeys.all, 'events', id, limit] as const,
 }
 
@@ -35,6 +36,14 @@ export function useTaskEvents(id: string, limit = 200) {
   return useQuery({
     queryKey: taskKeys.events(id, limit),
     queryFn: () => request<{ data: TaskEvent[]; total: number }>(`/tasks/${id}/events?limit=${limit}`),
+    enabled: !!id,
+  })
+}
+
+export function useTaskTargets(id: string) {
+  return useQuery({
+    queryKey: taskKeys.targets(id),
+    queryFn: () => request<{ data: TaskTargetStatus[]; total: number }>(`/tasks/${id}/targets`),
     enabled: !!id,
   })
 }

@@ -27,6 +27,7 @@ type SkillsCheckResult struct {
 type MaliciousMatch struct {
 	SkillName string
 	Reason    string
+	ReasonZH  string
 	Severity  string
 }
 
@@ -88,6 +89,7 @@ func CheckSkills(ip string, port int, timeout time.Duration) SkillsCheckResult {
 						result.MaliciousMatches = append(result.MaliciousMatches, MaliciousMatch{
 							SkillName: skill.Name,
 							Reason:    rule.Reason,
+							ReasonZH:  rule.ReasonZH,
 							Severity:  severity,
 						})
 					}

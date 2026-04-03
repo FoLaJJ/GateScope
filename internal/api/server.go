@@ -84,6 +84,7 @@ func (s *Server) setupRouter() {
 			protected.GET("/tasks", s.handleListTasks)
 			protected.POST("/tasks", s.handleCreateTask)
 			protected.GET("/tasks/:id", s.handleGetTask)
+			protected.GET("/tasks/:id/targets", s.handleGetTaskTargets)
 			protected.GET("/tasks/:id/events", s.handleListTaskEvents)
 			protected.DELETE("/tasks/:id", s.handleDeleteTask)
 			protected.POST("/tasks/:id/start", s.handleStartTask)

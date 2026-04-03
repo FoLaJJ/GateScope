@@ -10,13 +10,14 @@ import AuthTag from '@/components/AuthTag'
 import { cvssColor, getRiskOptions } from '@/constants'
 import { CHECK_TYPE_LABELS, getCheckTypeOptions } from '@/constants/check'
 import { useURLQueryState } from '@/hooks/useURLQueryState'
-import { extractVersionContext } from '@/utils/vuln'
+import { extractVersionContext, getPreferredDescription, listVulnerabilityIdentifiers } from '@/utils/vuln'
 import type { Vulnerability, VulnListParams } from '@/types'
 
 type VulnerabilityQueryState = {
   page: number
   limit: number
-  cve_id: string
+  identifier: string
+  identifier_type: string
   severity: string
   check_type: string
 }
@@ -24,7 +25,8 @@ type VulnerabilityQueryState = {
 const VULN_QUERY_DEFAULTS: VulnerabilityQueryState = {
   page: 1,
   limit: 20,
-  cve_id: '',
+  identifier: '',
+  identifier_type: '',
   severity: '',
   check_type: '',
 }
@@ -33,16 +35,17 @@ const EMPTY_VULNS: Vulnerability[] = []
 
 export default function Vulnerabilities() {
   const { params, setParams, resetParams } = useURLQueryState(VULN_QUERY_DEFAULTS)
-  const [searchCVE, setSearchCVE] = useState(params.cve_id)
+  const [searchIdentifier, setSearchIdentifier] = useState(params.identifier)
 
   useEffect(() => {
-    setSearchCVE(params.cve_id)
-  }, [params.cve_id])
+    setSearchIdentifier(params.identifier)
+  }, [params.identifier])
 
   const queryParams: VulnListParams = {
     page: params.page,
     limit: params.limit,
-    cve_id: params.cve_id || undefined,
+    identifier: params.identifier || undefined,
+    identifier_type: params.identifier_type ? (params.identifier_type as 'cve' | 'cnnvd' | 'ghsa') : undefined,
     severity: params.severity ? (params.severity as Vulnerability['severity']) : undefined,
     check_type: params.check_type ? (params.check_type as Vulnerability['check_type']) : undefined,
   }
@@ -65,6 +68,25 @@ export default function Vulnerabilities() {
     [vulns],
   )
 
+  const renderIdentifiers = (record: Vulnerability) => {
+    const identifiers = listVulnerabilityIdentifiers(record)
+    if (identifiers.length === 0) {
+      return '-'
+    }
+
+    return (
+      <Space size={[4, 4]} wrap>
+        {identifiers.map((identifier) => (
+          <Tag color="geekblue" key={identifier.key}>
+            <Typography.Link href={identifier.href} target="_blank">
+              {identifier.label}
+            </Typography.Link>
+          </Tag>
+        ))}
+      </Space>
+    )
+  }
+
   const expandedRow = (record: Vulnerability) => {
     const versionContext = extractVersionContext(record)
     return (
@@ -74,6 +96,9 @@ export default function Vulnerabilities() {
         </Descriptions.Item>
         <Descriptions.Item label="Agent类型">{record.agent_type || '-'}</Descriptions.Item>
         <Descriptions.Item label="资产版本">{record.asset_version || '-'}</Descriptions.Item>
+        <Descriptions.Item label="漏洞编号" span={2}>
+          {renderIdentifiers(record)}
+        </Descriptions.Item>
         <Descriptions.Item label="认证模式">
           {record.auth_mode ? <AuthTag mode={record.auth_mode} /> : '-'}
         </Descriptions.Item>
@@ -89,7 +114,16 @@ export default function Vulnerabilities() {
           {record.detected_at ? new Date(record.detected_at).toLocaleString('zh-CN') : '-'}
         </Descriptions.Item>
         <Descriptions.Item label="完整描述" span={2}>
-          {record.description || '-'}
+          <Space direction="vertical" size={4} style={{ width: '100%' }}>
+            <div>
+              <Typography.Text strong>中文：</Typography.Text>
+              <Typography.Text>{record.description_zh || '-'}</Typography.Text>
+            </div>
+            <div>
+              <Typography.Text strong>English:</Typography.Text>
+              <Typography.Text>{record.description || '-'}</Typography.Text>
+            </div>
+          </Space>
         </Descriptions.Item>
         <Descriptions.Item label="修复建议" span={2}>
           <Typography.Text type="success">{record.remediation || '-'}</Typography.Text>
@@ -130,20 +164,10 @@ export default function Vulnerabilities() {
       render: (value: string | undefined) => (value ? <Tag color="blue">{value}</Tag> : '-'),
     },
     {
-      title: 'CVE编号',
-      dataIndex: 'cve_id',
-      key: 'cve_id',
-      width: 160,
-      render: (value: string) =>
-        value ? (
-          <Tooltip title="点击查看NVD详情">
-            <Typography.Link href={`https://nvd.nist.gov/vuln/detail/${value}`} target="_blank">
-              {value}
-            </Typography.Link>
-          </Tooltip>
-        ) : (
-          '-'
-        ),
+      title: '漏洞编号',
+      key: 'identifier',
+      width: 260,
+      render: (_: unknown, record: Vulnerability) => renderIdentifiers(record),
     },
     {
       title: '标题',
@@ -151,8 +175,8 @@ export default function Vulnerabilities() {
       key: 'title',
       width: 300,
       ellipsis: true,
-      render: (value: string) => (
-        <Tooltip title={value}>
+      render: (value: string, record: Vulnerability) => (
+        <Tooltip title={getPreferredDescription(record) || value}>
           <Typography.Text strong>{value}</Typography.Text>
         </Tooltip>
       ),
@@ -191,7 +215,20 @@ export default function Vulnerabilities() {
     },
   ]
 
-  const hasFilters = Boolean(params.cve_id || params.severity || params.check_type)
+  const identifierPlaceholder =
+    params.identifier_type === 'cve'
+      ? '搜索CVE编号'
+      : params.identifier_type === 'cnnvd'
+        ? '搜索CNNVD编号'
+        : params.identifier_type === 'ghsa'
+          ? '搜索GHSA编号'
+          : '搜索漏洞编号'
+
+  const hasFilters = Boolean(params.identifier || params.identifier_type || params.severity || params.check_type)
+  const mappingStatusText =
+    ruleCatalog?.cnnvd_count && ruleCatalog.cnnvd_count > 0
+      ? `已补录 ${ruleCatalog.cnnvd_count} 条 CNNVD 对应关系，可直接按编号类型筛选。`
+      : 'CNNVD 映射链路已支持，但当前仍在持续补录可核实的对应关系。'
 
   return (
     <div>
@@ -202,9 +239,9 @@ export default function Vulnerabilities() {
           type={ruleCatalog.consistent ? 'info' : 'warning'}
           showIcon
           message={`漏洞规则库更新时间：${ruleCatalog.updated_at || '未标注'}，已核对到：${ruleCatalog.source_cutoff || '未标注'}`}
-          description={`当前内置 ${ruleCatalog.cve_count} 条 CVE 规则，${ruleCatalog.poc_count} 条 PoC 规则。${
+          description={`当前内置 ${ruleCatalog.rule_count} 条版本规则，其中 CVE ${ruleCatalog.cve_count} 条、CNNVD ${ruleCatalog.cnnvd_count} 条、GHSA ${ruleCatalog.ghsa_count} 条，PoC ${ruleCatalog.poc_count} 条。${
             ruleCatalog.consistent ? '当前映射校验通过。' : `当前存在 ${ruleCatalog.issues.length} 条映射告警。`
-          }${ruleCatalog.notes ? ` ${ruleCatalog.notes}` : ''}`}
+          } ${mappingStatusText}${ruleCatalog.notes ? ` ${ruleCatalog.notes}` : ''}`}
         />
       )}
 
@@ -229,14 +266,26 @@ export default function Vulnerabilities() {
       />
 
       <Space style={{ marginTop: 16, marginBottom: 16 }} wrap>
+        <Select
+          placeholder="编号类型"
+          allowClear
+          style={{ width: 140 }}
+          value={params.identifier_type || undefined}
+          options={[
+            { label: 'CVE', value: 'cve' },
+            { label: 'CNNVD', value: 'cnnvd' },
+            { label: 'GHSA', value: 'ghsa' },
+          ]}
+          onChange={(value) => setParams({ identifier_type: value ?? '', page: 1 }, { replace: false })}
+        />
         <Input.Search
-          placeholder="搜索CVE编号"
+          placeholder={identifierPlaceholder}
           allowClear
           style={{ width: 220 }}
           prefix={<SearchOutlined />}
-          value={searchCVE}
-          onChange={(event) => setSearchCVE(event.target.value)}
-          onSearch={(value) => setParams({ cve_id: value.trim(), page: 1 }, { replace: false })}
+          value={searchIdentifier}
+          onChange={(event) => setSearchIdentifier(event.target.value)}
+          onSearch={(value) => setParams({ identifier: value.trim(), page: 1 }, { replace: false })}
         />
         <Select
           placeholder="严重等级"

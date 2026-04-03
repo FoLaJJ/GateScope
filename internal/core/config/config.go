@@ -85,7 +85,7 @@ func setDefaults(v *viper.Viper) {
 	v.SetDefault("database.max_idle_conn", 5)
 	v.SetDefault("database.max_lifetime", "5m")
 
-	v.SetDefault("scanner.default_ports", []int{18789, 18792, 3000, 8080, 8888})
+	v.SetDefault("scanner.default_ports", []int{18789, 18790, 18792, 3000, 8080, 8888})
 	v.SetDefault("scanner.timeout", "3s")
 	v.SetDefault("scanner.concurrency", 100)
 	v.SetDefault("scanner.rate_limit", 10000)

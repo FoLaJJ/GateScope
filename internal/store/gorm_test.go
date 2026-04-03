@@ -54,6 +54,26 @@ func TestTaskCRUD(t *testing.T) {
 	assert.Error(t, err)
 }
 
+func TestCreateTaskPersistsExplicitFalseEnableMDNS(t *testing.T) {
+	s := testStore(t)
+	ctx := context.Background()
+
+	task := &models.Task{
+		ID:         uuid.New().String(),
+		Name:       "mdns-off",
+		Targets:    "192.168.1.1",
+		Status:     models.TaskStatusPending,
+		Type:       models.TaskTypeInstant,
+		EnableMDNS: false,
+	}
+
+	require.NoError(t, s.CreateTask(ctx, task))
+
+	got, err := s.GetTask(ctx, task.ID)
+	require.NoError(t, err)
+	assert.False(t, got.EnableMDNS)
+}
+
 func TestAssetUpsert(t *testing.T) {
 	s := testStore(t)
 	ctx := context.Background()
@@ -94,12 +114,15 @@ func TestVulnerabilities(t *testing.T) {
 	ctx := context.Background()
 
 	vuln := &models.Vulnerability{
-		ID:       uuid.New().String(),
-		AssetID:  "asset-1",
-		CVEID:    "CVE-2026-25253",
-		Title:    "WebSocket Hijack",
-		Severity: models.SeverityHigh,
-		CVSS:     8.8,
+		ID:            uuid.New().String(),
+		AssetID:       "asset-1",
+		CVEID:         "CVE-2026-25253",
+		CNNVDID:       "CNNVD-202604-123",
+		GHSAID:        "GHSA-g8p2-7wf7-98mq",
+		Title:         "WebSocket Hijack",
+		DescriptionZH: "中文漏洞描述",
+		Severity:      models.SeverityHigh,
+		CVSS:          8.8,
 	}
 
 	err := s.CreateVulnerability(ctx, vuln)
@@ -109,6 +132,9 @@ func TestVulnerabilities(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Equal(t, int64(1), total)
 	assert.Equal(t, "CVE-2026-25253", vulns[0].CVEID)
+	assert.Equal(t, "CNNVD-202604-123", vulns[0].CNNVDID)
+	assert.Equal(t, "GHSA-g8p2-7wf7-98mq", vulns[0].GHSAID)
+	assert.Equal(t, "中文漏洞描述", vulns[0].DescriptionZH)
 }
 
 func TestDashboardStats(t *testing.T) {

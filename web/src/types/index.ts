@@ -8,6 +8,7 @@ export type {
   AlertEventType,
   AlertCondition,
   Task,
+  TaskTargetStatus,
   TaskEvent,
   CreateTaskRequest,
   Asset,

@@ -1,10 +1,13 @@
 package store
 
 import (
+	"encoding/json"
 	"fmt"
+	"strings"
 	"time"
 
 	"github.com/AutoScan/agentscan/internal/core/logger"
+	"github.com/AutoScan/agentscan/internal/models"
 	"go.uber.org/zap"
 	"gorm.io/gorm"
 )
@@ -191,6 +194,102 @@ var migrations = []Migration{
 				CreatedAt time.Time `gorm:"autoCreateTime"`
 			}
 			return tx.AutoMigrate(&TaskEvent{})
+		},
+	},
+	{
+		Version: "004",
+		Name:    "add_vulnerability_external_ids",
+		Up: func(tx *gorm.DB) error {
+			type Vulnerability struct {
+				CNNVDID string `gorm:"size:32;index"`
+				GHSAID  string `gorm:"size:32;index"`
+			}
+			return tx.Table("vulnerabilities").AutoMigrate(&Vulnerability{})
+		},
+	},
+	{
+		Version: "005",
+		Name:    "refresh_scan_results_schema",
+		Up: func(tx *gorm.DB) error {
+			type ScanResult struct {
+				ProbeType string `gorm:"size:32"`
+				Success   bool
+				Matched   bool
+				Details   string `gorm:"type:text"`
+				Error     string `gorm:"type:text"`
+				Duration  int64
+				CreatedAt time.Time `gorm:"autoCreateTime"`
+			}
+			return tx.Table("scan_results").AutoMigrate(&ScanResult{})
+		},
+	},
+	{
+		Version: "006",
+		Name:    "add_vulnerability_description_zh",
+		Up: func(tx *gorm.DB) error {
+			type Vulnerability struct {
+				DescriptionZH string `gorm:"type:text"`
+			}
+			return tx.Table("vulnerabilities").AutoMigrate(&Vulnerability{})
+		},
+	},
+	{
+		Version: "007",
+		Name:    "repair_missing_assets_from_task_events",
+		Up: func(tx *gorm.DB) error {
+			type taskEventRow struct {
+				Payload   string
+				EventTime time.Time
+			}
+
+			var rows []taskEventRow
+			if err := tx.Table("task_events").
+				Select("payload, event_time").
+				Where("event_type = ?", "agent.identified").
+				Find(&rows).Error; err != nil {
+				return err
+			}
+
+			for _, row := range rows {
+				if strings.TrimSpace(row.Payload) == "" {
+					continue
+				}
+
+				var asset models.Asset
+				if err := json.Unmarshal([]byte(row.Payload), &asset); err != nil {
+					continue
+				}
+				if asset.ID == "" || strings.TrimSpace(asset.IP) == "" || asset.Port == 0 {
+					continue
+				}
+
+				var count int64
+				if err := tx.Table("assets").Where("id = ?", asset.ID).Count(&count).Error; err != nil {
+					return err
+				}
+				if count > 0 {
+					continue
+				}
+
+				if asset.Status == "" {
+					asset.Status = models.AssetStatusActive
+				}
+				if asset.RiskLevel == "" {
+					asset.RiskLevel = models.RiskFromAuthMode(asset.AuthMode)
+				}
+				if asset.FirstSeenAt.IsZero() {
+					asset.FirstSeenAt = row.EventTime
+				}
+				if asset.LastSeenAt.IsZero() {
+					asset.LastSeenAt = row.EventTime
+				}
+
+				if err := tx.Table("assets").Create(&asset).Error; err != nil {
+					return err
+				}
+			}
+
+			return nil
 		},
 	},
 }

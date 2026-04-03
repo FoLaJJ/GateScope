@@ -23,13 +23,14 @@ type AssetFilter struct {
 }
 
 type VulnFilter struct {
-	TaskID    string
-	AssetID   string
-	Severity  *models.Severity
-	CVEID     string
-	CheckType string
-	Limit     int
-	Offset    int
+	TaskID     string
+	AssetID    string
+	Severity   *models.Severity
+	Identifier string
+	IdentifierType string
+	CheckType  string
+	Limit      int
+	Offset     int
 }
 
 type DashboardStats struct {

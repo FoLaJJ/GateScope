@@ -18,7 +18,7 @@ func TestMatchCVEs_OldVersion(t *testing.T) {
 }
 
 func TestMatchCVEs_LatestVersion(t *testing.T) {
-	results := MatchCVEs("2026.3.13")
+	results := MatchCVEs("2026.4.2")
 	var matched int
 	for _, r := range results {
 		if r.Matched {
@@ -38,4 +38,16 @@ func TestMatchCVEs_PartiallyPatched(t *testing.T) {
 	}
 	assert.NotContains(t, matchedCVEs, "CVE-2026-25253", "should be patched in 2026.2.25")
 	assert.Contains(t, matchedCVEs, "CVE-2026-26972", "should still be affected (fix is 2026.3.2)")
+}
+
+func TestMatchCVEs_GHSAOnlyRuleCarriesIdentifier(t *testing.T) {
+	results := MatchCVEs("2026.4.1")
+	for _, r := range results {
+		if r.CVE.GHSAID == "GHSA-jj6q-rrrf-h66h" {
+			assert.True(t, r.Matched)
+			assert.Empty(t, r.CVE.CVEID)
+			return
+		}
+	}
+	t.Fatalf("GHSA-jj6q-rrrf-h66h rule not found")
 }

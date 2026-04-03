@@ -377,8 +377,8 @@ export default function Tasks() {
           <Form.Item name="description" label="任务描述">
             <Input.TextArea rows={2} placeholder="可选描述信息" />
           </Form.Item>
-          <Form.Item name="ports" label="端口" extra="留空使用默认端口: 18789,18792,3000,8080,8888">
-            <Input placeholder="18789,18792,3000,8080,8888" />
+          <Form.Item name="ports" label="端口" extra="留空使用默认端口: 18789,18790,18792,3000,8080,8888">
+            <Input placeholder="18789,18790,18792,3000,8080,8888" />
           </Form.Item>
           <Space size="large" wrap>
             <Form.Item name="scan_depth" label="扫描深度">

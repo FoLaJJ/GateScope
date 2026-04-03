@@ -1,260 +1,1424 @@
 meta:
-  updated_at: "2026-04-03"
-  verified_at: "2026-04-03"
-  source_cutoff: "2026-04-02"
-  source: "CVE Details vendor list 38835 (OpenClaw) with local rule normalization"
-  notes: "PoC severity/CVSS/remediation are normalized from the matching CVE entry when cve_id is present."
-
+  updated_at: '2026-04-03'
+  verified_at: '2026-04-03'
+  source_cutoff: '2026-04-03'
+  source: OpenClaw GitHub Security Advisories + NVD OpenClaw corpus + CNNVD OpenClaw batch list
+  notes: PoC severity/CVSS/remediation are normalized from the matching version rule when cve_id is present. External IDs are merged from configs/rules/openclaw-id-mappings.yaml and the UI renders all available CVE/CNNVD/GHSA aliases. CNNVD aliases now include the 155-entry OpenClaw batch mapping supplied from the March 2026 CNNVD bulletin list plus previously verified historical mappings.
 cves:
-  - id: "CVE-2026-27009"
-    title: "Stored XSS in Control UI Assistant Identity Rendering"
-    severity: "medium"
-    cvss: 5.8
-    affected_before: "2026.2.15"
-    description: "Assistant name or avatar values can break out of an inline script context in the Control UI and execute attacker-controlled JavaScript."
-    remediation: "Upgrade to >= 2026.2.15 and avoid serving bootstrap config through inline scripts"
-  - id: "CVE-2026-24764"
-    title: "Slack Channel Metadata Prompt Injection"
-    severity: "low"
-    cvss: 3.7
-    affected_before: "2026.2.3"
-    description: "When Slack integration is enabled, untrusted channel topic or description metadata can be treated as higher-trust prompt context and expand prompt-injection surface."
-    remediation: "Upgrade to >= 2026.2.3 and avoid trusting external Slack metadata as system-level prompt input"
-  - id: "CVE-2026-34510"
-    title: "SMB Path Injection via Upload Inputs"
-    severity: "medium"
-    cvss: 5.3
-    affected_before: "2026.3.28"
-    description: "Untrusted upload path inputs can trigger SMB-style outbound path resolution and expose the host to unintended network file access."
-    remediation: "Upgrade to >= 2026.3.28 and reject external or UNC-style upload paths"
-  - id: "CVE-2026-34509"
-    title: "Pair Approval Scope Escalation"
-    severity: "high"
-    cvss: 8.6
-    affected_before: "2026.3.28"
-    description: "Low-privilege operators can approve pairing requests with broader scopes than intended because approval-time scope validation is incomplete."
-    remediation: "Upgrade to >= 2026.3.28"
-  - id: "CVE-2026-34508"
-    title: "Inbound Policy Downgrade in Route Sender Controls"
-    severity: "medium"
-    cvss: 5.3
-    affected_before: "2026.3.28"
-    description: "Sender control rules can silently degrade to a more permissive state, allowing unauthorized inbound interactions with configured bots."
-    remediation: "Upgrade to >= 2026.3.28"
-  - id: "CVE-2026-34506"
-    title: "Node Pair Caller Scope Validation Bypass"
-    severity: "high"
-    cvss: 8.6
-    affected_before: "2026.3.28"
-    description: "Caller scopes are not enforced correctly in node pairing approval logic, enabling broader device privileges than the operator should receive."
-    remediation: "Upgrade to >= 2026.3.28"
-  - id: "CVE-2026-34505"
-    title: "Pre-Authorization Media Fetch and Disk Write"
-    severity: "medium"
-    cvss: 6.9
-    affected_before: "2026.3.28"
-    description: "Inbound media can be fetched and written to disk before sender authorization is verified, allowing unwanted network and storage activity."
-    remediation: "Upgrade to >= 2026.3.28"
-  - id: "CVE-2026-34504"
-    title: "Revoked Session Persistence on Existing WebSockets"
-    severity: "high"
-    cvss: 8.6
-    affected_before: "2026.3.28"
-    description: "Revoked tokens or removed devices do not always terminate already-established WebSocket sessions, permitting continued access until reconnect."
-    remediation: "Upgrade to >= 2026.3.28 and force re-authentication after revocation"
-  - id: "CVE-2026-34426"
-    title: "Secret Brute Force on Nextcloud Talk Webhooks"
-    severity: "medium"
-    cvss: 6.5
-    affected_before: "2026.3.28"
-    description: "Weak webhook secrets can be brute-forced because inbound authentication lacks sufficient rate limiting and retry controls."
-    remediation: "Upgrade to >= 2026.3.28 and rotate weak webhook secrets"
-  - id: "CVE-2026-34425"
-    title: "Message Tool Alias URL Sandbox Escape"
-    severity: "high"
-    cvss: 8.6
-    affected_before: "2026.3.24"
-    description: "Alias URL parameters used by message tools can bypass local root checks and expose files outside the intended sandbox."
-    remediation: "Upgrade to >= 2026.3.24"
-  - id: "CVE-2026-34503"
-    title: "Revoked WebSocket Sessions Stay Alive"
-    severity: "high"
-    cvss: 8.6
-    affected_before: "2026.3.28"
-    description: "Removed devices or revoked tokens do not terminate already-authenticated WebSocket sessions, allowing continued unauthorized access until reconnect."
-    remediation: "Upgrade to >= 2026.3.28 and force re-auth after device removal or token revocation"
-  - id: "CVE-2026-33581"
-    title: "Message Tool Sandbox Bypass via Alias URLs"
-    severity: "high"
-    cvss: 8.6
-    affected_before: "2026.3.24"
-    description: "Alias parameters such as mediaUrl and fileUrl can bypass localRoots validation and expose arbitrary local files outside the intended sandbox."
-    remediation: "Upgrade to >= 2026.3.24"
-  - id: "CVE-2026-33580"
-    title: "Nextcloud Talk Webhook Secret Brute Force"
-    severity: "medium"
-    cvss: 6.5
-    affected_before: "2026.3.28"
-    description: "Missing rate limiting on Nextcloud Talk webhook authentication allows brute-forcing weak shared secrets and forging inbound webhook events."
-    remediation: "Upgrade to >= 2026.3.28 and rotate weak webhook secrets"
-  - id: "CVE-2026-33579"
-    title: "Privilege Escalation in /pair approve"
-    severity: "high"
-    cvss: 8.6
-    affected_before: "2026.3.28"
-    description: "The /pair approve flow does not propagate caller scopes correctly, allowing non-admin pairing users to approve broader device scopes including admin access."
-    remediation: "Upgrade to >= 2026.3.28"
-  - id: "CVE-2026-33578"
-    title: "Sender Policy Downgrade in Google Chat and Zalouser"
-    severity: "medium"
-    cvss: 5.3
-    affected_before: "2026.3.28"
-    description: "Route-level group allowlist policies can silently downgrade to open policy, letting unauthorized senders interact with bots."
-    remediation: "Upgrade to >= 2026.3.28"
-  - id: "CVE-2026-33577"
-    title: "Node Pairing Scope Validation Bypass"
-    severity: "high"
-    cvss: 8.6
-    affected_before: "2026.3.28"
-    description: "Low-privilege operators can approve node pairing requests with broader scopes because callerScopes validation is missing in the node approval path."
-    remediation: "Upgrade to >= 2026.3.28"
-  - id: "CVE-2026-33576"
-    title: "Unauthorized Media Fetch and Disk Write"
-    severity: "medium"
-    cvss: 6.9
-    affected_before: "2026.3.28"
-    description: "Inbound Zalo media is downloaded and stored before sender authorization is checked, allowing unauthorized senders to trigger network fetches and disk writes."
-    remediation: "Upgrade to >= 2026.3.28"
-  - id: "CVE-2026-33575"
-    title: "Long-Lived Gateway Credentials in Setup Codes"
-    severity: "high"
-    cvss: 8.6
-    affected_before: "2026.3.12"
-    description: "Pairing setup codes embed reusable shared gateway credentials, so leaked QR codes or chat history can expose credentials beyond the intended one-time flow."
-    remediation: "Upgrade to >= 2026.3.12 and rotate exposed setup codes or shared gateway credentials"
-  - id: "CVE-2026-33574"
-    title: "Skills Installer Path Traversal Race"
-    severity: "medium"
-    cvss: 6.2
-    affected_before: "2026.3.8"
-    description: "The skills download installer validates the tools root lexically but reuses a mutable path later, enabling path traversal or redirection outside the intended tools directory."
-    remediation: "Upgrade to >= 2026.3.8"
-  - id: "CVE-2026-33573"
-    title: "Gateway Agent RPC Workspace Escape"
-    severity: "high"
-    cvss: 8.8
-    affected_before: "2026.3.11"
-    description: "Authenticated operators can supply attacker-controlled spawnedBy or workspaceDir values to escape workspace boundaries and execute file or exec operations in arbitrary directories."
-    remediation: "Upgrade to >= 2026.3.11"
-  - id: "CVE-2026-33572"
-    title: "Readable Session Transcript Files"
-    severity: "high"
-    cvss: 8.4
-    affected_before: "2026.2.17"
-    description: "Session transcript JSONL files are created with overly broad permissions, allowing local users to read sensitive tool output and secrets."
-    remediation: "Upgrade to >= 2026.2.17 and tighten transcript file permissions"
-  - id: "CVE-2026-32987"
-    title: "Bootstrap Setup Code Replay"
-    severity: "critical"
-    cvss: 9.8
-    affected_before: "2026.3.13"
-    description: "Bootstrap setup codes can be replayed during device pairing verification, allowing repeated verification and privilege escalation of pending pairing scopes."
-    remediation: "Upgrade to >= 2026.3.13"
-  - id: "CVE-2026-32980"
-    title: "Telegram Webhook Pre-Auth Resource Exhaustion"
-    severity: "high"
-    cvss: 8.7
-    affected_before: "2026.3.13"
-    description: "Telegram webhook request bodies are read and buffered before the secret token is validated, allowing unauthenticated attackers to consume memory and socket time."
-    remediation: "Upgrade to >= 2026.3.13"
-  - id: "CVE-2026-32979"
-    title: "Approval Integrity Bypass via Script Rewrite"
-    severity: "high"
-    cvss: 7.3
-    affected_before: "2026.3.11"
-    description: "When exact file binding is not possible, attackers can modify approved local scripts between approval and execution to run different code."
-    remediation: "Upgrade to >= 2026.3.11"
-  - id: "CVE-2026-32978"
-    title: "system.run Mutable Operand Approval Bypass"
-    severity: "critical"
-    cvss: 9.4
-    affected_before: "2026.3.11"
-    description: "Approvals for certain script runners such as tsx or jiti do not bind mutable file operands, allowing attackers to rewrite approved scripts before execution."
-    remediation: "Upgrade to >= 2026.3.11"
-  - id: "CVE-2026-32976"
-    title: "configWrites Bypass on Sibling Accounts"
-    severity: "high"
-    cvss: 7.1
-    affected_before: "2026.3.11"
-    description: "Channel commands can mutate protected sibling-account configuration despite configWrites restrictions, enabling unauthorized configuration changes."
-    remediation: "Upgrade to >= 2026.3.11"
-  - id: "CVE-2026-32975"
-    title: "Zalouser Allowlist Name Collision Bypass"
-    severity: "critical"
-    cvss: 9.8
-    affected_before: "2026.3.12"
-    description: "Zalouser allowlist mode matches mutable group display names instead of stable identifiers, allowing spoofed groups to bypass authorization."
-    remediation: "Upgrade to >= 2026.3.12"
-  - id: "CVE-2026-32974"
-    title: "Feishu Webhook Forged Event Injection"
-    severity: "critical"
-    cvss: 9.8
-    affected_before: "2026.3.12"
-    description: "Feishu webhook mode accepts forged events when only verificationToken is configured without encryptKey, enabling unauthenticated event injection and downstream tool execution."
-    remediation: "Upgrade to >= 2026.3.12 and configure encryptKey for webhook deployments"
-  - id: "CVE-2026-32973"
-    title: "Exec Allowlist Pattern Overmatch"
-    severity: "critical"
-    cvss: 9.8
-    affected_before: "2026.3.11"
-    description: "Improper normalization in matchesExecAllowlistPattern lets wildcard patterns overmatch on POSIX paths, bypassing exec allowlist intent."
-    remediation: "Upgrade to >= 2026.3.11"
-  - id: "CVE-2026-25253"
-    title: "ClawJacked: WebSocket Hijack to RCE"
-    severity: "high"
-    cvss: 8.8
-    affected_before: "2026.2.25"
-    description: "Malicious websites can hijack local OpenClaw Gateway via WebSocket without Origin validation, enabling brute-force of auth token and full agent takeover."
-    remediation: "Upgrade to >= 2026.2.25"
-  - id: "CVE-2026-26972"
-    title: "Path Traversal via crafted skill paths"
-    severity: "high"
-    cvss: 7.5
-    affected_before: "2026.3.2"
-    description: "Crafted skill installation path allows reading arbitrary files outside the skills directory."
-    remediation: "Upgrade to >= 2026.3.2"
-  - id: "CVE-2026-28470"
-    title: "Exec Whitelist Bypass"
-    severity: "critical"
-    cvss: 9.8
-    affected_before: "2026.3.2"
-    description: "Bypass of command execution whitelist allows running arbitrary shell commands through the agent."
-    remediation: "Upgrade to >= 2026.3.2"
-  - id: "CVE-2026-26327"
-    title: "mDNS Gateway Spoofing"
-    severity: "high"
-    cvss: 7.2
-    affected_before: "2026.2.25"
-    description: "Unauthenticated mDNS service advertisement allows gateway spoofing on local network."
-    remediation: "Upgrade to >= 2026.2.25 and disable mDNS in production"
-  - id: "CVE-2026-24163"
-    title: "Remote Code Execution via Skill Installation"
-    severity: "critical"
-    cvss: 9.8
-    affected_before: "2026.1.24"
-    description: "Malicious skills can execute arbitrary code during installation without proper sandboxing."
-    remediation: "Upgrade to >= 2026.1.24"
-  - id: "CVE-2026-22234"
-    title: "Server-Side Request Forgery (SSRF)"
-    severity: "high"
-    cvss: 7.5
-    affected_before: "2026.2.14"
-    description: "Agent can be tricked into making requests to internal network resources."
-    remediation: "Upgrade to >= 2026.2.14"
-  - id: "CVE-2026-21980"
-    title: "Authentication Bypass via Token Prediction"
-    severity: "critical"
-    cvss: 9.1
-    affected_before: "2026.2.25"
-    description: "Weak token generation allows prediction and brute-force of authentication tokens."
-    remediation: "Upgrade to >= 2026.2.25"
+- id: GHSA-846p-hgpv-vphc
+  ghsa_id: GHSA-846p-hgpv-vphc
+  title: QQ Bot structured payloads could trigger unintended mention and card actions
+  severity: low
+  cvss: 3.7
+  affected_before: 2026.4.2
+  description: When QQ bot integrations are enabled, structured payload fields can trigger unintended mentions or card actions because inbound content is not normalized strictly enough.
+  remediation: Upgrade to >= 2026.4.2 and disable unused QQ bot integrations
+  description_zh: 该漏洞与“QQ Bot structured payloads could trigger unintended mention and card actions”相关。受影响版本为 2026.4.2 之前。成功利用后会对 OpenClaw 的认证、授权、沙箱隔离或运行安全造成影响。
+- id: GHSA-m34q-h93w-vg5x
+  ghsa_id: GHSA-m34q-h93w-vg5x
+  title: Slack extractions could fall back to unauthenticated file fetch
+  severity: medium
+  cvss: 5.3
+  affected_before: 2026.4.2
+  description: Slack extraction flows can fall back to an unauthenticated file fetch path, exposing the deployment to unintended remote file retrieval when Slack integration is enabled.
+  remediation: Upgrade to >= 2026.4.2 and review Slack connector exposure
+  description_zh: 该漏洞与“Slack extractions could fall back to unauthenticated file fetch”相关。受影响版本为 2026.4.2 之前。成功利用后会对 OpenClaw 的认证、授权、沙箱隔离或运行安全造成影响。
+- id: GHSA-98ch-45wp-ch47
+  ghsa_id: GHSA-98ch-45wp-ch47
+  title: Image links in message tool alias URLs could expose local files
+  severity: medium
+  cvss: 5.8
+  affected_before: 2026.4.2
+  description: Alias URLs supplied to image-capable message tools can resolve to unintended local files when alias validation is incomplete.
+  remediation: Upgrade to >= 2026.4.2 and restrict alias URL handling to approved roots
+  description_zh: 该漏洞与“Image links in message tool alias URLs could expose local files”相关。受影响版本为 2026.4.2 之前。成功利用后会对 OpenClaw 的认证、授权、沙箱隔离或运行安全造成影响。
+- id: GHSA-2f7j-h9x4-jh34
+  ghsa_id: GHSA-2f7j-h9x4-jh34
+  title: Excessive user sessions could allocate unbounded memory during startup
+  severity: low
+  cvss: 3.7
+  affected_before: 2026.4.2
+  description: Large numbers of persisted user sessions can trigger unbounded memory allocation during startup and degrade availability.
+  remediation: Upgrade to >= 2026.4.2 and trim excessive historical sessions
+  description_zh: 该漏洞与“Excessive user sessions could allocate unbounded memory during startup”相关。受影响版本为 2026.4.2 之前。成功利用后可能导致拒绝服务、资源耗尽或稳定性下降。
+- id: GHSA-2qrv-rc5x-2g2h
+  ghsa_id: GHSA-2qrv-rc5x-2g2h
+  title: WhatsApp bridge could trust crafted quoted stanza fields in group replies
+  severity: medium
+  cvss: 5.3
+  affected_before: 2026.4.2
+  description: When WhatsApp bridge features are enabled, crafted quoted stanza metadata in group replies can be treated as trusted context and influence downstream handling.
+  remediation: Upgrade to >= 2026.4.2 and disable unused WhatsApp bridge routes
+  description_zh: 该漏洞与“WhatsApp bridge could trust crafted quoted stanza fields in group replies”相关。受影响版本为 2026.4.2 之前。成功利用后会对 OpenClaw 的认证、授权、沙箱隔离或运行安全造成影响。
+- id: GHSA-5hff-46vh-rxmw
+  ghsa_id: GHSA-5hff-46vh-rxmw
+  title: iOS bridge could accept attachment downloads without revalidating sender trust
+  severity: high
+  cvss: 8.6
+  affected_before: 2026.4.2
+  description: The iOS bridge can download attachments before fully revalidating sender trust, which may allow unauthorized content retrieval and storage activity.
+  remediation: Upgrade to >= 2026.4.2 and review iOS bridge attachment workflows
+  description_zh: 该漏洞与“iOS bridge could accept attachment downloads without revalidating sender trust”相关。受影响版本为 2026.4.2 之前。成功利用后会对 OpenClaw 的认证、授权、沙箱隔离或运行安全造成影响。
+- id: GHSA-9jpj-p5w9-9rfc
+  ghsa_id: GHSA-9jpj-p5w9-9rfc
+  title: Shared-secret auth could leak validity via timing differences
+  severity: medium
+  cvss: 5.9
+  affected_before: 2026.4.2
+  description: Shared-secret authentication paths can leak whether a secret is valid through measurable timing differences, increasing brute-force feasibility.
+  remediation: Upgrade to >= 2026.4.2 and rotate weak shared secrets
+  description_zh: 该漏洞与“Shared-secret auth could leak validity via timing differences”相关。受影响版本为 2026.4.2 之前。成功利用后可能导致敏感信息、凭证或内部状态泄露。
+- id: GHSA-4p4f-fc8q-84m3
+  ghsa_id: GHSA-4p4f-fc8q-84m3
+  title: Mail pipeline could invoke SMTP server when webhook auth is disabled
+  severity: medium
+  cvss: 5.3
+  affected_before: 2026.4.2
+  description: If webhook authentication is disabled, the mail pipeline can still invoke SMTP handling paths and trigger unintended outbound mail activity.
+  remediation: Upgrade to >= 2026.4.2 and keep webhook authentication enabled
+  description_zh: 该漏洞与“Mail pipeline could invoke SMTP server when webhook auth is disabled”相关。受影响版本为 2026.4.2 之前。成功利用后会对 OpenClaw 的认证、授权、沙箱隔离或运行安全造成影响。
+- id: GHSA-jj6q-rrrf-h66h
+  ghsa_id: GHSA-jj6q-rrrf-h66h
+  title: Telegram sender allowlist matching could resolve dynamic usernames
+  severity: high
+  cvss: 8.6
+  affected_before: 2026.4.2
+  description: Telegram sender allowlist checks can resolve mutable usernames instead of stable identifiers, allowing authorization decisions to drift unexpectedly.
+  remediation: Upgrade to >= 2026.4.2 and prefer stable Telegram identifiers in allowlists
+  description_zh: 该漏洞与“Telegram sender allowlist matching could resolve dynamic usernames”相关。受影响版本为 2026.4.2 之前。成功利用后会对 OpenClaw 的认证、授权、沙箱隔离或运行安全造成影响。
+- id: CVE-2026-27009
+  title: Stored XSS in Control UI Assistant Identity Rendering
+  severity: medium
+  cvss: 5.8
+  affected_before: 2026.2.15
+  description: Assistant name or avatar values can break out of an inline script context in the Control UI and execute attacker-controlled JavaScript.
+  remediation: Upgrade to >= 2026.2.15 and avoid serving bootstrap config through inline scripts
+  description_zh: 该漏洞与“Stored XSS in Control UI Assistant Identity Rendering”相关。受影响版本为 2026.2.15 之前。成功利用后可能导致跨站脚本、提示注入或界面上下文被劫持。
+- id: CVE-2026-24764
+  title: Slack Channel Metadata Prompt Injection
+  severity: low
+  cvss: 3.7
+  affected_before: 2026.2.3
+  description: When Slack integration is enabled, untrusted channel topic or description metadata can be treated as higher-trust prompt context and expand prompt-injection surface.
+  remediation: Upgrade to >= 2026.2.3 and avoid trusting external Slack metadata as system-level prompt input
+  description_zh: 该漏洞与“Slack Channel Metadata Prompt Injection”相关。受影响版本为 2026.2.3 之前。成功利用后可能导致跨站脚本、提示注入或界面上下文被劫持。
+- id: CVE-2026-34510
+  title: SMB Path Injection via Upload Inputs
+  severity: medium
+  cvss: 5.3
+  affected_before: 2026.3.28
+  description: Untrusted upload path inputs can trigger SMB-style outbound path resolution and expose the host to unintended network file access.
+  remediation: Upgrade to >= 2026.3.28 and reject external or UNC-style upload paths
+  description_zh: 该漏洞与“SMB Path Injection via Upload Inputs”相关。受影响版本为 2026.3.28 之前。成功利用后会对 OpenClaw 的认证、授权、沙箱隔离或运行安全造成影响。
+- id: CVE-2026-34509
+  title: Pair Approval Scope Escalation
+  severity: high
+  cvss: 8.6
+  affected_before: 2026.3.28
+  description: Low-privilege operators can approve pairing requests with broader scopes than intended because approval-time scope validation is incomplete.
+  remediation: Upgrade to >= 2026.3.28
+  description_zh: 该漏洞与“Pair Approval Scope Escalation”相关。受影响版本为 2026.3.28 之前。成功利用后可能导致未授权访问、权限提升或安全策略绕过。
+- id: CVE-2026-34508
+  title: Inbound Policy Downgrade in Route Sender Controls
+  severity: medium
+  cvss: 5.3
+  affected_before: 2026.3.28
+  description: Sender control rules can silently degrade to a more permissive state, allowing unauthorized inbound interactions with configured bots.
+  remediation: Upgrade to >= 2026.3.28
+  description_zh: 该漏洞与“Inbound Policy Downgrade in Route Sender Controls”相关。受影响版本为 2026.3.28 之前。成功利用后会对 OpenClaw 的认证、授权、沙箱隔离或运行安全造成影响。
+- id: CVE-2026-34506
+  title: Node Pair Caller Scope Validation Bypass
+  severity: high
+  cvss: 8.6
+  affected_before: 2026.3.28
+  description: Caller scopes are not enforced correctly in node pairing approval logic, enabling broader device privileges than the operator should receive.
+  remediation: Upgrade to >= 2026.3.28
+  description_zh: 该漏洞与“Node Pair Caller Scope Validation Bypass”相关。受影响版本为 2026.3.28 之前。成功利用后可能导致未授权访问、权限提升或安全策略绕过。
+- id: CVE-2026-34505
+  title: Pre-Authorization Media Fetch and Disk Write
+  severity: medium
+  cvss: 6.9
+  affected_before: 2026.3.28
+  description: Inbound media can be fetched and written to disk before sender authorization is verified, allowing unwanted network and storage activity.
+  remediation: Upgrade to >= 2026.3.28
+  description_zh: 该漏洞与“Pre-Authorization Media Fetch and Disk Write”相关。受影响版本为 2026.3.28 之前。成功利用后会对 OpenClaw 的认证、授权、沙箱隔离或运行安全造成影响。
+- id: CVE-2026-34504
+  title: Revoked Session Persistence on Existing WebSockets
+  severity: high
+  cvss: 8.6
+  affected_before: 2026.3.28
+  description: Revoked tokens or removed devices do not always terminate already-established WebSocket sessions, permitting continued access until reconnect.
+  remediation: Upgrade to >= 2026.3.28 and force re-authentication after revocation
+  description_zh: 该漏洞与“Revoked Session Persistence on Existing WebSockets”相关。受影响版本为 2026.3.28 之前。成功利用后会对 OpenClaw 的认证、授权、沙箱隔离或运行安全造成影响。
+- id: CVE-2026-34426
+  title: Secret Brute Force on Nextcloud Talk Webhooks
+  severity: medium
+  cvss: 6.5
+  affected_before: 2026.3.28
+  description: Weak webhook secrets can be brute-forced because inbound authentication lacks sufficient rate limiting and retry controls.
+  remediation: Upgrade to >= 2026.3.28 and rotate weak webhook secrets
+  description_zh: 该漏洞与“Secret Brute Force on Nextcloud Talk Webhooks”相关。受影响版本为 2026.3.28 之前。成功利用后可能导致身份伪造、请求重放或认证被暴力猜解。
+- id: CVE-2026-34425
+  title: Message Tool Alias URL Sandbox Escape
+  severity: high
+  cvss: 8.6
+  affected_before: 2026.3.24
+  description: Alias URL parameters used by message tools can bypass local root checks and expose files outside the intended sandbox.
+  remediation: Upgrade to >= 2026.3.24
+  description_zh: 该漏洞与“Message Tool Alias URL Sandbox Escape”相关。受影响版本为 2026.3.24 之前。成功利用后可能导致目录遍历、越权读写或沙箱边界突破。
+- id: CVE-2026-34503
+  title: Revoked WebSocket Sessions Stay Alive
+  severity: high
+  cvss: 8.6
+  affected_before: 2026.3.28
+  description: Removed devices or revoked tokens do not terminate already-authenticated WebSocket sessions, allowing continued unauthorized access until reconnect.
+  remediation: Upgrade to >= 2026.3.28 and force re-auth after device removal or token revocation
+  description_zh: 该漏洞与“Revoked WebSocket Sessions Stay Alive”相关。受影响版本为 2026.3.28 之前。成功利用后会对 OpenClaw 的认证、授权、沙箱隔离或运行安全造成影响。
+- id: CVE-2026-33581
+  title: Message Tool Sandbox Bypass via Alias URLs
+  severity: high
+  cvss: 8.6
+  affected_before: 2026.3.24
+  description: Alias parameters such as mediaUrl and fileUrl can bypass localRoots validation and expose arbitrary local files outside the intended sandbox.
+  remediation: Upgrade to >= 2026.3.24
+  description_zh: 该漏洞与“Message Tool Sandbox Bypass via Alias URLs”相关。受影响版本为 2026.3.24 之前。成功利用后会对 OpenClaw 的认证、授权、沙箱隔离或运行安全造成影响。
+- id: CVE-2026-33580
+  title: Nextcloud Talk Webhook Secret Brute Force
+  severity: medium
+  cvss: 6.5
+  affected_before: 2026.3.28
+  description: Missing rate limiting on Nextcloud Talk webhook authentication allows brute-forcing weak shared secrets and forging inbound webhook events.
+  remediation: Upgrade to >= 2026.3.28 and rotate weak webhook secrets
+  description_zh: 该漏洞与“Nextcloud Talk Webhook Secret Brute Force”相关。受影响版本为 2026.3.28 之前。成功利用后可能导致身份伪造、请求重放或认证被暴力猜解。
+- id: CVE-2026-33579
+  title: Privilege Escalation in /pair approve
+  severity: high
+  cvss: 8.6
+  affected_before: 2026.3.28
+  description: The /pair approve flow does not propagate caller scopes correctly, allowing non-admin pairing users to approve broader device scopes including admin access.
+  remediation: Upgrade to >= 2026.3.28
+  description_zh: 该漏洞与“Privilege Escalation in /pair approve”相关。受影响版本为 2026.3.28 之前。成功利用后可能导致未授权访问、权限提升或安全策略绕过。
+- id: CVE-2026-33578
+  title: Sender Policy Downgrade in Google Chat and Zalouser
+  severity: medium
+  cvss: 5.3
+  affected_before: 2026.3.28
+  description: Route-level group allowlist policies can silently downgrade to open policy, letting unauthorized senders interact with bots.
+  remediation: Upgrade to >= 2026.3.28
+  description_zh: 该漏洞与“Sender Policy Downgrade in Google Chat and Zalouser”相关。受影响版本为 2026.3.28 之前。成功利用后会对 OpenClaw 的认证、授权、沙箱隔离或运行安全造成影响。
+- id: CVE-2026-33577
+  title: Node Pairing Scope Validation Bypass
+  severity: high
+  cvss: 8.6
+  affected_before: 2026.3.28
+  description: Low-privilege operators can approve node pairing requests with broader scopes because callerScopes validation is missing in the node approval path.
+  remediation: Upgrade to >= 2026.3.28
+  description_zh: 该漏洞与“Node Pairing Scope Validation Bypass”相关。受影响版本为 2026.3.28 之前。成功利用后可能导致未授权访问、权限提升或安全策略绕过。
+- id: CVE-2026-33576
+  title: Unauthorized Media Fetch and Disk Write
+  severity: medium
+  cvss: 6.9
+  affected_before: 2026.3.28
+  description: Inbound Zalo media is downloaded and stored before sender authorization is checked, allowing unauthorized senders to trigger network fetches and disk writes.
+  remediation: Upgrade to >= 2026.3.28
+  description_zh: 该漏洞与“Unauthorized Media Fetch and Disk Write”相关。受影响版本为 2026.3.28 之前。成功利用后会对 OpenClaw 的认证、授权、沙箱隔离或运行安全造成影响。
+- id: CVE-2026-33575
+  title: Long-Lived Gateway Credentials in Setup Codes
+  severity: high
+  cvss: 8.6
+  affected_before: 2026.3.12
+  description: Pairing setup codes embed reusable shared gateway credentials, so leaked QR codes or chat history can expose credentials beyond the intended one-time flow.
+  remediation: Upgrade to >= 2026.3.12 and rotate exposed setup codes or shared gateway credentials
+  description_zh: 该漏洞与“Long-Lived Gateway Credentials in Setup Codes”相关。受影响版本为 2026.3.12 之前。成功利用后可能导致敏感信息、凭证或内部状态泄露。
+- id: CVE-2026-33574
+  title: Skills Installer Path Traversal Race
+  severity: medium
+  cvss: 6.2
+  affected_before: 2026.3.8
+  description: The skills download installer validates the tools root lexically but reuses a mutable path later, enabling path traversal or redirection outside the intended tools directory.
+  remediation: Upgrade to >= 2026.3.8
+  description_zh: 该漏洞与“Skills Installer Path Traversal Race”相关。受影响版本为 2026.3.8 之前。成功利用后可能导致目录遍历、越权读写或沙箱边界突破。
+- id: CVE-2026-33573
+  title: Gateway Agent RPC Workspace Escape
+  severity: high
+  cvss: 8.8
+  affected_before: 2026.3.11
+  description: Authenticated operators can supply attacker-controlled spawnedBy or workspaceDir values to escape workspace boundaries and execute file or exec operations in arbitrary directories.
+  remediation: Upgrade to >= 2026.3.11
+  description_zh: 该漏洞与“Gateway Agent RPC Workspace Escape”相关。受影响版本为 2026.3.11 之前。成功利用后可能导致目录遍历、越权读写或沙箱边界突破。
+- id: CVE-2026-33572
+  title: Readable Session Transcript Files
+  severity: high
+  cvss: 8.4
+  affected_before: 2026.2.17
+  description: Session transcript JSONL files are created with overly broad permissions, allowing local users to read sensitive tool output and secrets.
+  remediation: Upgrade to >= 2026.2.17 and tighten transcript file permissions
+  description_zh: 该漏洞与“Readable Session Transcript Files”相关。受影响版本为 2026.2.17 之前。成功利用后可能导致敏感信息、凭证或内部状态泄露。
+- id: CVE-2026-32987
+  title: Bootstrap Setup Code Replay
+  severity: critical
+  cvss: 9.8
+  affected_before: 2026.3.13
+  description: Bootstrap setup codes can be replayed during device pairing verification, allowing repeated verification and privilege escalation of pending pairing scopes.
+  remediation: Upgrade to >= 2026.3.13
+  description_zh: 该漏洞与“Bootstrap Setup Code Replay”相关。受影响版本为 2026.3.13 之前。成功利用后可能导致未授权访问、权限提升或安全策略绕过。
+- id: CVE-2026-32980
+  title: Telegram Webhook Pre-Auth Resource Exhaustion
+  severity: high
+  cvss: 8.7
+  affected_before: 2026.3.13
+  description: Telegram webhook request bodies are read and buffered before the secret token is validated, allowing unauthenticated attackers to consume memory and socket time.
+  remediation: Upgrade to >= 2026.3.13
+  description_zh: 该漏洞与“Telegram Webhook Pre-Auth Resource Exhaustion”相关。受影响版本为 2026.3.13 之前。成功利用后可能导致拒绝服务、资源耗尽或稳定性下降。
+- id: CVE-2026-32979
+  title: Approval Integrity Bypass via Script Rewrite
+  severity: high
+  cvss: 7.3
+  affected_before: 2026.3.11
+  description: When exact file binding is not possible, attackers can modify approved local scripts between approval and execution to run different code.
+  remediation: Upgrade to >= 2026.3.11
+  description_zh: 该漏洞与“Approval Integrity Bypass via Script Rewrite”相关。受影响版本为 2026.3.11 之前。成功利用后会对 OpenClaw 的认证、授权、沙箱隔离或运行安全造成影响。
+- id: CVE-2026-32978
+  title: system.run Mutable Operand Approval Bypass
+  severity: critical
+  cvss: 9.4
+  affected_before: 2026.3.11
+  description: Approvals for certain script runners such as tsx or jiti do not bind mutable file operands, allowing attackers to rewrite approved scripts before execution.
+  remediation: Upgrade to >= 2026.3.11
+  description_zh: 该漏洞与“system.run Mutable Operand Approval Bypass”相关。受影响版本为 2026.3.11 之前。成功利用后会对 OpenClaw 的认证、授权、沙箱隔离或运行安全造成影响。
+- id: CVE-2026-32976
+  title: configWrites Bypass on Sibling Accounts
+  severity: high
+  cvss: 7.1
+  affected_before: 2026.3.11
+  description: Channel commands can mutate protected sibling-account configuration despite configWrites restrictions, enabling unauthorized configuration changes.
+  remediation: Upgrade to >= 2026.3.11
+  description_zh: 该漏洞与“configWrites Bypass on Sibling Accounts”相关。受影响版本为 2026.3.11 之前。成功利用后会对 OpenClaw 的认证、授权、沙箱隔离或运行安全造成影响。
+- id: CVE-2026-32975
+  title: Zalouser Allowlist Name Collision Bypass
+  severity: critical
+  cvss: 9.8
+  affected_before: 2026.3.12
+  description: Zalouser allowlist mode matches mutable group display names instead of stable identifiers, allowing spoofed groups to bypass authorization.
+  remediation: Upgrade to >= 2026.3.12
+  description_zh: 该漏洞与“Zalouser Allowlist Name Collision Bypass”相关。受影响版本为 2026.3.12 之前。成功利用后可能导致身份伪造、请求重放或认证被暴力猜解。
+- id: CVE-2026-32974
+  title: Feishu Webhook Forged Event Injection
+  severity: critical
+  cvss: 9.8
+  affected_before: 2026.3.12
+  description: Feishu webhook mode accepts forged events when only verificationToken is configured without encryptKey, enabling unauthenticated event injection and downstream tool execution.
+  remediation: Upgrade to >= 2026.3.12 and configure encryptKey for webhook deployments
+  description_zh: 该漏洞与“Feishu Webhook Forged Event Injection”相关。受影响版本为 2026.3.12 之前。成功利用后可能导致身份伪造、请求重放或认证被暴力猜解。
+- id: CVE-2026-32973
+  title: Exec Allowlist Pattern Overmatch
+  severity: critical
+  cvss: 9.8
+  affected_before: 2026.3.11
+  description: Improper normalization in matchesExecAllowlistPattern lets wildcard patterns overmatch on POSIX paths, bypassing exec allowlist intent.
+  remediation: Upgrade to >= 2026.3.11
+  description_zh: 该漏洞与“Exec Allowlist Pattern Overmatch”相关。受影响版本为 2026.3.11 之前。成功利用后可能导致命令注入或任意代码执行。
+- id: CVE-2026-25253
+  title: 'ClawJacked: WebSocket Hijack to RCE'
+  severity: high
+  cvss: 8.8
+  affected_before: 2026.2.25
+  description: Malicious websites can hijack local OpenClaw Gateway via WebSocket without Origin validation, enabling brute-force of auth token and full agent takeover.
+  remediation: Upgrade to >= 2026.2.25
+  description_zh: '该漏洞与“ClawJacked: WebSocket Hijack to RCE”相关。受影响版本为 2026.2.25 之前。成功利用后可能导致身份伪造、请求重放或认证被暴力猜解。'
+- id: CVE-2026-26972
+  title: Path Traversal via crafted skill paths
+  severity: high
+  cvss: 7.5
+  affected_before: 2026.3.2
+  description: Crafted skill installation path allows reading arbitrary files outside the skills directory.
+  remediation: Upgrade to >= 2026.3.2
+  description_zh: 该漏洞与“Path Traversal via crafted skill paths”相关。受影响版本为 2026.3.2 之前。成功利用后可能导致目录遍历、越权读写或沙箱边界突破。
+- id: CVE-2026-28470
+  title: Exec Whitelist Bypass
+  severity: critical
+  cvss: 9.8
+  affected_before: 2026.3.2
+  description: Bypass of command execution whitelist allows running arbitrary shell commands through the agent.
+  remediation: Upgrade to >= 2026.3.2
+  description_zh: 该漏洞与“Exec Whitelist Bypass”相关。受影响版本为 2026.3.2 之前。成功利用后可能导致命令注入或任意代码执行。
+- id: CVE-2026-26327
+  title: mDNS Gateway Spoofing
+  severity: high
+  cvss: 7.2
+  affected_before: 2026.2.25
+  description: Unauthenticated mDNS service advertisement allows gateway spoofing on local network.
+  remediation: Upgrade to >= 2026.2.25 and disable mDNS in production
+  description_zh: 该漏洞与“mDNS Gateway Spoofing”相关。受影响版本为 2026.2.25 之前。成功利用后可能导致身份伪造、请求重放或认证被暴力猜解。
+- id: CVE-2026-24163
+  title: Remote Code Execution via Skill Installation
+  severity: critical
+  cvss: 9.8
+  affected_before: 2026.1.24
+  description: Malicious skills can execute arbitrary code during installation without proper sandboxing.
+  remediation: Upgrade to >= 2026.1.24
+  description_zh: 该漏洞与“Remote Code Execution via Skill Installation”相关。受影响版本为 2026.1.24 之前。成功利用后可能导致命令注入或任意代码执行。
+- id: CVE-2026-22234
+  title: Server-Side Request Forgery (SSRF)
+  severity: high
+  cvss: 7.5
+  affected_before: 2026.2.14
+  description: Agent can be tricked into making requests to internal network resources.
+  remediation: Upgrade to >= 2026.2.14
+  description_zh: 该漏洞与“Server-Side Request Forgery (SSRF)”相关。受影响版本为 2026.2.14 之前。成功利用后可能导致服务端请求伪造并访问内网或云元数据资源。
+- id: CVE-2026-21980
+  title: Authentication Bypass via Token Prediction
+  severity: critical
+  cvss: 9.1
+  affected_before: 2026.2.25
+  description: Weak token generation allows prediction and brute-force of authentication tokens.
+  remediation: Upgrade to >= 2026.2.25
+  description_zh: 该漏洞与“Authentication Bypass via Token Prediction”相关。受影响版本为 2026.2.25 之前。成功利用后可能导致未授权访问、权限提升或安全策略绕过。
+- id: CVE-2026-32924
+  title: OpenClaw 安全漏洞
+  severity: critical
+  cvss: 9.8
+  affected_before: 2026.3.12
+  description: OpenClaw before 2026.3.12 contains an authorization bypass vulnerability where Feishu reaction events with omitted chat_type are misclassified as p2p conversations instead of group chats. Attackers can exploit this misclassification to bypass groupAllowFrom and requireMention protections in group chat reaction-derived events.
+  remediation: Upgrade to >= 2026.3.12
+  description_zh: 该漏洞与“OpenClaw 安全漏洞”相关。受影响版本为 2026.3.12 之前。成功利用后可能导致未授权访问、权限提升或安全策略绕过。
+- id: CVE-2026-32922
+  title: OpenClaw 安全漏洞
+  severity: critical
+  cvss: 9.9
+  affected_before: 2026.3.11
+  description: OpenClaw before 2026.3.11 contains a privilege escalation vulnerability in device.token.rotate that allows callers with operator.pairing scope to mint tokens with broader scopes by failing to constrain newly minted scopes to the caller's current scope set. Attackers can obtain operator.admin tokens for paired devices and achieve remote code execution on connected nodes via system.run or gain unauthorized gateway-admin access.
+  remediation: Upgrade to >= 2026.3.11
+  description_zh: 该漏洞与“OpenClaw 安全漏洞”相关。受影响版本为 2026.3.11 之前。成功利用后可能导致未授权访问、权限提升或安全策略绕过。
+- id: CVE-2026-31998
+  title: OpenClaw 安全漏洞
+  severity: critical
+  cvss: 8.6
+  affected_before: 2026.2.24
+  description: OpenClaw versions 2026.2.22 and 2026.2.23 contain an authorization bypass vulnerability in the synology-chat channel plugin where dmPolicy set to allowlist with empty allowedUserIds fails open. Attackers with Synology sender access can bypass authorization checks and trigger unauthorized agent dispatch and downstream tool actions.
+  remediation: Upgrade to >= 2026.2.24
+  description_zh: 该漏洞与“OpenClaw 安全漏洞”相关。受影响版本为 2026.2.24 之前。成功利用后可能导致未授权访问、权限提升或安全策略绕过。
+- id: CVE-2026-32038
+  title: OpenClaw 访问控制错误漏洞
+  severity: critical
+  cvss: 9.0
+  affected_before: 2026.2.24
+  description: OpenClaw before 2026.2.24 contains a sandbox network isolation bypass vulnerability that allows trusted operators to join another container's network namespace. Attackers can configure the docker.network parameter with container:<id> values to reach services in target container namespaces and bypass network hardening controls.
+  remediation: Upgrade to >= 2026.2.24
+  description_zh: 该漏洞与“OpenClaw 访问控制错误漏洞”相关。受影响版本为 2026.2.24 之前。成功利用后会对 OpenClaw 的认证、授权、沙箱隔离或运行安全造成影响。
+- id: CVE-2026-32913
+  title: OpenClaw 安全漏洞
+  severity: critical
+  cvss: 9.1
+  affected_before: 2026.3.7
+  description: OpenClaw before 2026.3.7 contains an improper header validation vulnerability in fetchWithSsrFGuard that forwards custom authorization headers across cross-origin redirects. Attackers can trigger redirects to different origins to intercept sensitive headers like X-Api-Key and Private-Token intended for the original destination.
+  remediation: Upgrade to >= 2026.3.7
+  description_zh: 该漏洞与“OpenClaw 安全漏洞”相关。受影响版本为 2026.3.7 之前。成功利用后可能导致服务端请求伪造并访问内网或云元数据资源。
+- id: CVE-2026-32916
+  title: OpenClaw 安全漏洞
+  severity: critical
+  cvss: 9.8
+  affected_before: 2026.3.11
+  description: OpenClaw versions 2026.3.7 before 2026.3.11 contain an authorization bypass vulnerability where plugin subagent routes execute gateway methods through a synthetic operator client with broad administrative scopes. Remote unauthenticated requests to plugin-owned routes can invoke runtime.subagent methods to perform privileged gateway actions including session deletion and agent execution.
+  remediation: Upgrade to >= 2026.3.11
+  description_zh: 该漏洞与“OpenClaw 安全漏洞”相关。受影响版本为 2026.3.11 之前。成功利用后可能导致未授权访问、权限提升或安全策略绕过。
+- id: CVE-2026-32917
+  title: OpenClaw 操作系统命令注入漏洞
+  severity: critical
+  cvss: 9.8
+  affected_before: 2026.3.13
+  description: OpenClaw before 2026.3.13 contains a remote command injection vulnerability in the iMessage attachment staging flow that allows attackers to execute arbitrary commands on configured remote hosts. The vulnerability exists because unsanitized remote attachment paths containing shell metacharacters are passed directly to the SCP remote operand without validation, enabling command execution when remote attachment staging is enabled.
+  remediation: Upgrade to >= 2026.3.13
+  description_zh: 该漏洞与“OpenClaw 操作系统命令注入漏洞”相关。受影响版本为 2026.3.13 之前。成功利用后可能导致命令注入或任意代码执行。
+- id: CVE-2026-22172
+  title: OpenClaw 安全漏洞
+  severity: critical
+  cvss: 9.9
+  affected_before: 2026.3.12
+  description: OpenClaw versions prior to 2026.3.12 contain an authorization bypass vulnerability in the WebSocket connect path that allows shared-token or password-authenticated connections to self-declare elevated scopes without server-side binding. Attackers can exploit this logic flaw to present unauthorized scopes such as operator.admin and perform admin-only gateway operations.
+  remediation: Upgrade to >= 2026.3.12
+  description_zh: 该漏洞与“OpenClaw 安全漏洞”相关。受影响版本为 2026.3.12 之前。成功利用后可能导致未授权访问、权限提升或安全策略绕过。
+- id: CVE-2026-32063
+  title: OpenClaw 安全漏洞
+  severity: high
+  cvss: 7.8
+  affected_before: 2026.2.21
+  description: OpenClaw version 2026.2.19-2 prior to 2026.2.21 contains a command injection vulnerability in systemd unit file generation where attacker-controlled environment values are not validated for CR/LF characters, allowing newline injection to break out of Environment= lines and inject arbitrary systemd directives. An attacker who can influence config.env.vars and trigger service install or restart can execute arbitrary commands with the privileges of the OpenClaw gateway service user.
+  remediation: Upgrade to >= 2026.2.21
+  description_zh: 该漏洞与“OpenClaw 安全漏洞”相关。受影响版本为 2026.2.21 之前。成功利用后可能导致命令注入或任意代码执行。
+- id: CVE-2026-32062
+  title: OpenClaw 安全漏洞
+  severity: high
+  cvss: 7.5
+  affected_before: 2026.2.22
+  description: OpenClaw versions2026.2.21-2 prior to 2026.2.22 and @openclaw/voice-call versions 2026.2.21 prior to 2026.2.22 accept media-stream WebSocket upgrades before stream validation, allowing unauthenticated clients to establish connections. Remote attackers can hold idle pre-authenticated sockets open to consume connection resources and degrade service availability for legitimate streams.
+  remediation: Upgrade to >= 2026.2.22
+  description_zh: 该漏洞与“OpenClaw 安全漏洞”相关。受影响版本为 2026.2.22 之前。成功利用后会对 OpenClaw 的认证、授权、沙箱隔离或运行安全造成影响。
+- id: CVE-2026-32059
+  title: OpenClaw 安全漏洞
+  severity: high
+  cvss: 8.8
+  affected_before: 2026.2.23
+  description: OpenClaw version 2026.2.22-2 prior to 2026.2.23 tools.exec.safeBins validation for sort command fails to properly validate GNU long-option abbreviations, allowing attackers to bypass denied-flag checks via abbreviated options. Remote attackers can execute sort commands with abbreviated long options to skip approval requirements in allowlist mode.
+  remediation: Upgrade to >= 2026.2.23
+  description_zh: 该漏洞与“OpenClaw 安全漏洞”相关。受影响版本为 2026.2.23 之前。成功利用后会对 OpenClaw 的认证、授权、沙箱隔离或运行安全造成影响。
+- id: CVE-2026-32060
+  title: OpenClaw 路径遍历漏洞
+  severity: high
+  cvss: 8.8
+  affected_before: 2026.2.14
+  description: OpenClaw versions prior to 2026.2.14 contain a path traversal vulnerability in apply_patch that allows attackers to write or delete files outside the configured workspace directory. When apply_patch is enabled without filesystem sandbox containment, attackers can exploit crafted paths including directory traversal sequences or absolute paths to escape workspace boundaries and modify arbitrary files.
+  remediation: Upgrade to >= 2026.2.14
+  description_zh: 该漏洞与“OpenClaw 路径遍历漏洞”相关。受影响版本为 2026.2.14 之前。成功利用后可能导致目录遍历、越权读写或沙箱边界突破。
+- id: CVE-2026-32064
+  title: OpenClaw 访问控制错误漏洞
+  severity: high
+  cvss: 9.1
+  affected_before: 2026.2.21
+  description: OpenClaw versions prior to 2026.2.21 sandbox browser entrypoint launches x11vnc without authentication for noVNC observer sessions, allowing unauthenticated access to the VNC interface. Remote attackers on the host loopback interface can connect to the exposed noVNC port to observe or interact with the sandbox browser without credentials.
+  remediation: Upgrade to >= 2026.2.21
+  description_zh: 该漏洞与“OpenClaw 访问控制错误漏洞”相关。受影响版本为 2026.2.21 之前。成功利用后可能导致敏感信息、凭证或内部状态泄露。
+- id: CVE-2026-32056
+  title: OpenClaw 操作系统命令注入漏洞
+  severity: high
+  cvss: 9.8
+  affected_before: 2026.2.22
+  description: OpenClaw versions prior to 2026.2.22 fail to sanitize shell startup environment variables HOME and ZDOTDIR in the system.run function, allowing attackers to bypass command allowlist protections. Remote attackers can inject malicious startup files such as .bash_profile or .zshenv to achieve arbitrary code execution before allowlist-evaluated commands are executed.
+  remediation: Upgrade to >= 2026.2.22
+  description_zh: 该漏洞与“OpenClaw 操作系统命令注入漏洞”相关。受影响版本为 2026.2.22 之前。成功利用后可能导致命令注入或任意代码执行。
+- id: CVE-2026-32051
+  title: OpenClaw 安全漏洞
+  severity: high
+  cvss: 8.8
+  affected_before: 2026.3.1
+  description: OpenClaw versions prior to 2026.3.1 contain an authorization mismatch vulnerability that allows authenticated callers with operator.write scope to invoke owner-only tool surfaces including gateway and cron through agent runs in scoped-token deployments. Attackers with write-scope access can perform control-plane actions beyond their intended authorization level by exploiting inconsistent owner-only gating during agent execution.
+  remediation: Upgrade to >= 2026.3.1
+  description_zh: 该漏洞与“OpenClaw 安全漏洞”相关。受影响版本为 2026.3.1 之前。成功利用后会对 OpenClaw 的认证、授权、沙箱隔离或运行安全造成影响。
+- id: CVE-2026-32055
+  title: OpenClaw 路径遍历漏洞
+  severity: high
+  cvss: 8.2
+  affected_before: 2026.2.26
+  description: OpenClaw versions prior to 2026.2.26 contain a path traversal vulnerability in workspace boundary validation that allows attackers to write files outside the workspace through in-workspace symlinks pointing to non-existent out-of-root targets. The vulnerability exists because the boundary check improperly resolves aliases, permitting the first write operation to escape the workspace boundary and create files in arbitrary locations.
+  remediation: Upgrade to >= 2026.2.26
+  description_zh: 该漏洞与“OpenClaw 路径遍历漏洞”相关。受影响版本为 2026.2.26 之前。成功利用后可能导致目录遍历、越权读写或沙箱边界突破。
+- id: CVE-2026-32049
+  title: OpenClaw 安全漏洞
+  severity: high
+  cvss: 7.5
+  affected_before: 2026.2.22
+  description: OpenClaw versions prior to 2026.2.22 fail to consistently enforce configured inbound media byte limits before buffering remote media across multiple channel ingestion paths. Remote attackers can send oversized media payloads to trigger elevated memory usage and potential process instability.
+  remediation: Upgrade to >= 2026.2.22
+  description_zh: 该漏洞与“OpenClaw 安全漏洞”相关。受影响版本为 2026.2.22 之前。成功利用后可能导致拒绝服务、资源耗尽或稳定性下降。
+- id: CVE-2026-32048
+  title: OpenClaw 安全漏洞
+  severity: high
+  cvss: 9.9
+  affected_before: 2026.3.1
+  description: OpenClaw versions prior to 2026.3.1 fail to enforce sandbox inheritance during cross-agent sessions_spawn operations, allowing sandboxed sessions to create child processes under unsandboxed agents. An attacker with a sandboxed session can exploit this to spawn child runtimes with sandbox.mode set to off, bypassing runtime confinement restrictions.
+  remediation: Upgrade to >= 2026.3.1
+  description_zh: 该漏洞与“OpenClaw 安全漏洞”相关。受影响版本为 2026.3.1 之前。成功利用后会对 OpenClaw 的认证、授权、沙箱隔离或运行安全造成影响。
+- id: CVE-2026-32042
+  title: OpenClaw 安全漏洞
+  severity: high
+  cvss: 8.8
+  affected_before: 2026.2.25
+  description: OpenClaw versions 2026.2.22 prior to 2026.2.25 contain a privilege escalation vulnerability allowing unpaired device identities to bypass operator pairing requirements and self-assign elevated operator scopes including operator.admin. Attackers with valid shared gateway authentication can present a self-signed unpaired device identity to request and obtain higher operator scopes before pairing approval is granted.
+  remediation: Upgrade to >= 2026.2.25
+  description_zh: 该漏洞与“OpenClaw 安全漏洞”相关。受影响版本为 2026.2.25 之前。成功利用后可能导致未授权访问、权限提升或安全策略绕过。
+- id: CVE-2026-32915
+  title: OpenClaw 安全漏洞
+  severity: high
+  cvss: 8.8
+  affected_before: 2026.3.11
+  description: OpenClaw before 2026.3.11 contains a sandbox boundary bypass vulnerability allowing leaf subagents to access the subagents control surface and resolve against parent requester scope instead of their own session tree. A low-privilege sandboxed leaf worker can steer or kill sibling runs and cause execution with broader tool policies by exploiting insufficient authorization checks on subagent control requests.
+  remediation: Upgrade to >= 2026.3.11
+  description_zh: 该漏洞与“OpenClaw 安全漏洞”相关。受影响版本为 2026.3.11 之前。成功利用后可能导致目录遍历、越权读写或沙箱边界突破。
+- id: CVE-2026-32000
+  title: OpenClaw 操作系统命令注入漏洞
+  severity: high
+  cvss: 7.1
+  affected_before: 2026.2.19
+  description: 'OpenClaw versions prior to 2026.2.19 contain a command injection vulnerability in the Lobster extension tool execution that uses Windows shell fallback with shell: true after spawn failures. Attackers can inject shell metacharacters in command arguments to execute arbitrary commands when subprocess launch fails with EINVAL or ENOENT errors.'
+  remediation: Upgrade to >= 2026.2.19
+  description_zh: 该漏洞与“OpenClaw 操作系统命令注入漏洞”相关。受影响版本为 2026.2.19 之前。成功利用后可能导致命令注入或任意代码执行。
+- id: CVE-2026-32918
+  title: OpenClaw 安全漏洞
+  severity: high
+  cvss: 8.4
+  affected_before: 2026.3.11
+  description: OpenClaw before 2026.3.11 contains a session sandbox escape vulnerability in the session_status tool that allows sandboxed subagents to access parent or sibling session state. Attackers can supply arbitrary sessionKey values to read or modify session data outside their sandbox scope, including persisted model overrides.
+  remediation: Upgrade to >= 2026.3.11
+  description_zh: 该漏洞与“OpenClaw 安全漏洞”相关。受影响版本为 2026.3.11 之前。成功利用后可能导致目录遍历、越权读写或沙箱边界突破。
+- id: CVE-2026-32914
+  title: OpenClaw 安全漏洞
+  severity: high
+  cvss: 8.8
+  affected_before: 2026.3.12
+  description: OpenClaw before 2026.3.12 contains an insufficient access control vulnerability in the /config and /debug command handlers that allows command-authorized non-owners to access owner-only surfaces. Attackers with command authorization can read or modify privileged configuration settings restricted to owners by exploiting missing owner-level permission checks.
+  remediation: Upgrade to >= 2026.3.12
+  description_zh: 该漏洞与“OpenClaw 安全漏洞”相关。受影响版本为 2026.3.12 之前。成功利用后可能导致未授权访问、权限提升或安全策略绕过。
+- id: CVE-2026-31999
+  title: OpenClaw 操作系统命令注入漏洞
+  severity: high
+  cvss: 7.8
+  affected_before: 2026.3.1
+  description: OpenClaw versions 2026.2.26 prior to 2026.3.1 on Windows contain a current working directory injection vulnerability in wrapper resolution for .cmd/.bat files that allows attackers to influence execution behavior through cwd manipulation. Remote attackers can exploit improper shell execution fallback mechanisms to achieve command execution integrity loss by controlling the current working directory during wrapper resolution.
+  remediation: Upgrade to >= 2026.3.1
+  description_zh: 该漏洞与“OpenClaw 操作系统命令注入漏洞”相关。受影响版本为 2026.3.1 之前。成功利用后可能导致命令注入或任意代码执行。
+- id: CVE-2026-31996
+  title: OpenClaw 操作系统命令注入漏洞
+  severity: high
+  cvss: 4.4
+  affected_before: 2026.2.19
+  description: OpenClaw versions prior to 2026.2.19 tools.exec.safeBins contains an input validation bypass vulnerability that allows attackers to execute unintended filesystem operations through sort output flags or recursive grep flags. Attackers with command execution access can leverage sort -o flag for arbitrary file writes or grep -R flag for recursive file reads, circumventing intended stdin-only restrictions.
+  remediation: Upgrade to >= 2026.2.19
+  description_zh: 该漏洞与“OpenClaw 操作系统命令注入漏洞”相关。受影响版本为 2026.2.19 之前。成功利用后会对 OpenClaw 的认证、授权、沙箱隔离或运行安全造成影响。
+- id: CVE-2026-31995
+  title: OpenClaw 操作系统命令注入漏洞
+  severity: high
+  cvss: 7.0
+  affected_before: 2026.2.19
+  description: 'OpenClaw versions 2026.1.21 prior to 2026.2.19 contain a command injection vulnerability in the Lobster extension''s Windows shell fallback mechanism that allows attackers to inject arbitrary commands through tool-provided arguments. When spawn failures trigger shell fallback with shell: true, attackers can exploit cmd.exe command interpretation to execute malicious commands by controlling workflow arguments.'
+  remediation: Upgrade to >= 2026.2.19
+  description_zh: 该漏洞与“OpenClaw 操作系统命令注入漏洞”相关。受影响版本为 2026.2.19 之前。成功利用后可能导致命令注入或任意代码执行。
+- id: CVE-2026-31994
+  title: OpenClaw 操作系统命令注入漏洞
+  severity: high
+  cvss: 7.8
+  affected_before: 2026.2.19
+  description: OpenClaw versions prior to 2026.2.19 contain a local command injection vulnerability in Windows scheduled task script generation due to unsafe handling of cmd metacharacters and expansion-sensitive characters in gateway.cmd files. Local attackers with control over service script generation arguments can inject arbitrary commands by providing metacharacter-only values or CR/LF sequences that execute unintended code in the scheduled task context.
+  remediation: Upgrade to >= 2026.2.19
+  description_zh: 该漏洞与“OpenClaw 操作系统命令注入漏洞”相关。受影响版本为 2026.2.19 之前。成功利用后可能导致命令注入或任意代码执行。
+- id: CVE-2026-31992
+  title: OpenClaw 安全漏洞
+  severity: high
+  cvss: 8.8
+  affected_before: 2026.2.23
+  description: OpenClaw versions prior to 2026.2.23 contain an allowlist bypass vulnerability in system.run guardrails that allows authenticated operators to execute unintended commands. When /usr/bin/env is allowlisted, attackers can use env -S to bypass policy analysis and execute shell wrapper payloads at runtime.
+  remediation: Upgrade to >= 2026.2.23
+  description_zh: 该漏洞与“OpenClaw 安全漏洞”相关。受影响版本为 2026.2.23 之前。成功利用后可能导致未授权访问、权限提升或安全策略绕过。
+- id: CVE-2026-31990
+  title: OpenClaw 后置链接漏洞
+  severity: high
+  cvss: 7.1
+  affected_before: 2026.3.2
+  description: OpenClaw versions prior to 2026.3.2 contain a vulnerability in the stageSandboxMedia function in which it fails to validate destination symlinks during media staging, allowing writes to follow symlinks outside the sandbox workspace. Attackers can exploit this by placing symlinks in the media/inbound directory to overwrite arbitrary files on the host system outside sandbox boundaries.
+  remediation: Upgrade to >= 2026.3.2
+  description_zh: 该漏洞与“OpenClaw 后置链接漏洞”相关。受影响版本为 2026.3.2 之前。成功利用后可能导致目录遍历、越权读写或沙箱边界突破。
+- id: CVE-2026-32972
+  title: OpenClaw 安全漏洞
+  severity: high
+  cvss: 7.1
+  affected_before: 2026.3.11
+  description: OpenClaw before 2026.3.11 contains an authorization bypass vulnerability allowing authenticated operators with only operator.write permission to access admin-only browser profile management routes through browser.request. Attackers can create or modify browser profiles and persist attacker-controlled remote CDP endpoints to disk without holding operator.admin privileges.
+  remediation: Upgrade to >= 2026.3.11
+  description_zh: 该漏洞与“OpenClaw 安全漏洞”相关。受影响版本为 2026.3.11 之前。成功利用后可能导致未授权访问、权限提升或安全策略绕过。
+- id: CVE-2026-29607
+  title: OpenClaw 操作系统命令注入漏洞
+  severity: high
+  cvss: 6.8
+  affected_before: 2026.2.22
+  description: OpenClaw versions prior to 2026.2.22 contain an authorization bypass vulnerability in allow-always wrapper persistence that allows attackers to bypass approval checks by persisting wrapper-level allowlist entries instead of validating inner executable intent. Remote attackers can approve benign wrapped system.run commands and subsequently execute different payloads without approval, enabling remote code execution on gateway and node-host execution flows.
+  remediation: Upgrade to >= 2026.2.22
+  description_zh: 该漏洞与“OpenClaw 操作系统命令注入漏洞”相关。受影响版本为 2026.2.22 之前。成功利用后可能导致未授权访问、权限提升或安全策略绕过。
+- id: CVE-2026-28461
+  title: OpenClaw 安全漏洞
+  severity: high
+  cvss: 7.5
+  affected_before: 2026.3.1
+  description: OpenClaw versions prior to 2026.3.1 contain an unbounded memory growth vulnerability in the Zalo webhook endpoint that allows unauthenticated attackers to trigger in-memory key accumulation by varying query strings. Remote attackers can exploit this by sending repeated requests with different query parameters to cause memory pressure, process instability, or out-of-memory conditions that degrade service availability.
+  remediation: Upgrade to >= 2026.3.1
+  description_zh: 该漏洞与“OpenClaw 安全漏洞”相关。受影响版本为 2026.3.1 之前。成功利用后可能导致拒绝服务、资源耗尽或稳定性下降。
+- id: CVE-2026-28460
+  title: OpenClaw 操作系统命令注入漏洞
+  severity: high
+  cvss: 7.1
+  affected_before: 2026.2.22
+  description: OpenClaw versions prior to 2026.2.22 contain an allowlist bypass vulnerability in system.run that allows attackers to execute non-allowlisted commands by splitting command substitution using shell line-continuation characters. Attackers can bypass security analysis by injecting $\\ followed by a newline and opening parenthesis inside double quotes, causing the shell to fold the line continuation into executable command substitution that circumvents approval boundaries.
+  remediation: Upgrade to >= 2026.2.22
+  description_zh: 该漏洞与“OpenClaw 操作系统命令注入漏洞”相关。受影响版本为 2026.2.22 之前。成功利用后可能导致未授权访问、权限提升或安全策略绕过。
+- id: CVE-2026-22176
+  title: OpenClaw 操作系统命令注入漏洞
+  severity: high
+  cvss: 7.8
+  affected_before: 2026.2.19
+  description: OpenClaw versions prior to 2026.2.19 contain a command injection vulnerability in Windows Scheduled Task script generation where environment variables are written to gateway.cmd using unquoted set KEY=VALUE assignments, allowing shell metacharacters to break out of assignment context. Attackers can inject arbitrary commands through environment variable values containing metacharacters like &, |, ^, %, or ! to achieve command execution when the scheduled task script is generated and executed.
+  remediation: Upgrade to >= 2026.2.19
+  description_zh: 该漏洞与“OpenClaw 操作系统命令注入漏洞”相关。受影响版本为 2026.2.19 之前。成功利用后可能导致命令注入或任意代码执行。
+- id: CVE-2026-27566
+  title: OpenClaw 操作系统命令注入漏洞
+  severity: high
+  cvss: 8.8
+  affected_before: 2026.2.22
+  description: OpenClaw versions prior to 2026.2.22 contain an allowlist bypass vulnerability in system.run exec analysis that fails to unwrap env and shell-dispatch wrapper chains. Attackers can route execution through wrapper binaries like env bash to smuggle payloads that satisfy allowlist entries while executing non-allowlisted commands.
+  remediation: Upgrade to >= 2026.2.22
+  description_zh: 该漏洞与“OpenClaw 操作系统命令注入漏洞”相关。受影响版本为 2026.2.22 之前。成功利用后可能导致未授权访问、权限提升或安全策略绕过。
+- id: CVE-2026-27523
+  title: OpenClaw 路径遍历漏洞
+  severity: high
+  cvss: 7.5
+  affected_before: 2026.2.24
+  description: OpenClaw versions prior to 2026.2.24 contain a sandbox bind validation vulnerability allowing attackers to bypass allowed-root and blocked-path checks via symlinked parent directories with non-existent leaf paths. Attackers can craft bind source paths that appear within allowed roots but resolve outside sandbox boundaries once missing leaf components are created, weakening bind-source isolation enforcement.
+  remediation: Upgrade to >= 2026.2.24
+  description_zh: 该漏洞与“OpenClaw 路径遍历漏洞”相关。受影响版本为 2026.2.24 之前。成功利用后可能导致目录遍历、越权读写或沙箱边界突破。
+- id: CVE-2026-22217
+  title: OpenClaw 安全漏洞
+  severity: high
+  cvss: 6.1
+  affected_before: 2026.2.23
+  description: OpenClaw version 2026.2.22 prior to 2026.2.23 contain an arbitrary code execution vulnerability in shell-env that allows attackers to execute attacker-controlled binaries by exploiting trusted-prefix fallback logic for the $SHELL variable. An attacker can influence the $SHELL environment variable on systems with writable trusted-prefix directories such as /opt/homebrew/bin to execute arbitrary binaries in the OpenClaw process context.
+  remediation: Upgrade to >= 2026.2.23
+  description_zh: 该漏洞与“OpenClaw 安全漏洞”相关。受影响版本为 2026.2.23 之前。成功利用后可能导致命令注入或任意代码执行。
+- id: CVE-2026-32032
+  title: OpenClaw 代码问题漏洞
+  severity: high
+  cvss: 7.8
+  affected_before: 2026.2.22
+  description: OpenClaw versions prior to 2026.2.22 contain an arbitrary shell execution vulnerability in shell environment fallback that trusts the unvalidated SHELL path from the host environment. An attacker with local environment access can inject a malicious SHELL variable to execute arbitrary commands with the privileges of the OpenClaw process.
+  remediation: Upgrade to >= 2026.2.22
+  description_zh: 该漏洞与“OpenClaw 代码问题漏洞”相关。受影响版本为 2026.2.22 之前。成功利用后可能导致命令注入或任意代码执行。
+- id: CVE-2026-22175
+  title: OpenClaw 安全漏洞
+  severity: high
+  cvss: 7.1
+  affected_before: 2026.2.23
+  description: OpenClaw versions prior to 2026.2.23 contain an exec approval bypass vulnerability in allowlist mode where allow-always grants could be circumvented through unrecognized multiplexer shell wrappers like busybox and toybox sh -c commands. Attackers can exploit this by invoking arbitrary payloads under the same multiplexer wrapper to satisfy stored allowlist rules, bypassing intended execution restrictions.
+  remediation: Upgrade to >= 2026.2.23
+  description_zh: 该漏洞与“OpenClaw 安全漏洞”相关。受影响版本为 2026.2.23 之前。成功利用后可能导致命令注入或任意代码执行。
+- id: CVE-2026-22171
+  title: OpenClaw 路径遍历漏洞
+  severity: high
+  cvss: 9.1
+  affected_before: 2026.2.19
+  description: OpenClaw versions prior to 2026.2.19 contain a path traversal vulnerability in the Feishu media download flow where untrusted media keys are interpolated directly into temporary file paths in extensions/feishu/src/media.ts. An attacker who can control Feishu media key values returned to the client can use traversal segments to escape os.tmpdir() and write arbitrary files within the OpenClaw process permissions.
+  remediation: Upgrade to >= 2026.2.19
+  description_zh: 该漏洞与“OpenClaw 路径遍历漏洞”相关。受影响版本为 2026.2.19 之前。成功利用后可能导致目录遍历、越权读写或沙箱边界突破。
+- id: CVE-2026-32025
+  title: OpenClaw 安全漏洞
+  severity: high
+  cvss: 7.5
+  affected_before: 2026.2.25
+  description: OpenClaw versions prior to 2026.2.25 contain an authentication hardening gap in browser-origin WebSocket clients that allows attackers to bypass origin checks and auth throttling on loopback deployments. An attacker can trick a user into opening a malicious webpage and perform password brute-force attacks against the gateway to establish an authenticated operator session and invoke control-plane methods.
+  remediation: Upgrade to >= 2026.2.25
+  description_zh: 该漏洞与“OpenClaw 安全漏洞”相关。受影响版本为 2026.2.25 之前。成功利用后可能导致身份伪造、请求重放或认证被暴力猜解。
+- id: CVE-2026-32015
+  title: OpenClaw 代码问题漏洞
+  severity: high
+  cvss: 7.8
+  affected_before: 2026.2.19
+  description: OpenClaw versions 2026.1.21 prior to 2026.2.19 contain a path hijacking vulnerability in tools.exec.safeBins that allows attackers to bypass allowlist checks by controlling process PATH resolution. Attackers who can influence the gateway process PATH or launch environment can execute trojan binaries with allowlisted names, such as jq, circumventing executable validation controls.
+  remediation: Upgrade to >= 2026.2.19
+  description_zh: 该漏洞与“OpenClaw 代码问题漏洞”相关。受影响版本为 2026.2.19 之前。成功利用后会对 OpenClaw 的认证、授权、沙箱隔离或运行安全造成影响。
+- id: CVE-2026-32014
+  title: OpenClaw 安全漏洞
+  severity: high
+  cvss: 8.0
+  affected_before: 2026.2.26
+  description: OpenClaw versions prior to 2026.2.26 contain a metadata spoofing vulnerability where reconnect platform and deviceFamily fields are accepted from the client without being bound into the device-auth signature. An attacker with a paired node identity on the trusted network can spoof reconnect metadata to bypass platform-based node command policies and gain access to restricted commands.
+  remediation: Upgrade to >= 2026.2.26
+  description_zh: 该漏洞与“OpenClaw 安全漏洞”相关。受影响版本为 2026.2.26 之前。成功利用后可能导致身份伪造、请求重放或认证被暴力猜解。
+- id: CVE-2026-32013
+  title: OpenClaw 后置链接漏洞
+  severity: high
+  cvss: 8.8
+  affected_before: 2026.2.25
+  description: OpenClaw versions prior to 2026.2.25 contain a symlink traversal vulnerability in the agents.files.get and agents.files.set methods that allows reading and writing files outside the agent workspace. Attackers can exploit symlinked allowlisted files to access arbitrary host files within gateway process permissions, potentially enabling code execution through file overwrite attacks.
+  remediation: Upgrade to >= 2026.2.25
+  description_zh: 该漏洞与“OpenClaw 后置链接漏洞”相关。受影响版本为 2026.2.25 之前。成功利用后可能导致目录遍历、越权读写或沙箱边界突破。
+- id: CVE-2026-32011
+  title: OpenClaw 安全漏洞
+  severity: high
+  cvss: 7.5
+  affected_before: 2026.3.2
+  description: OpenClaw versions prior to 2026.3.2 contain a denial of service vulnerability in webhook handlers for BlueBubbles and Google Chat that parse request bodies before performing authentication and signature validation. Unauthenticated attackers can exploit this by sending slow or oversized request bodies to exhaust parser resources and degrade service availability.
+  remediation: Upgrade to >= 2026.3.2
+  description_zh: 该漏洞与“OpenClaw 安全漏洞”相关。受影响版本为 2026.3.2 之前。成功利用后可能导致拒绝服务、资源耗尽或稳定性下降。
+- id: CVE-2026-32016
+  title: OpenClaw 代码问题漏洞
+  severity: high
+  cvss: 7.8
+  affected_before: 2026.2.22
+  description: OpenClaw versions prior to 2026.2.22 on macOS contain a path validation bypass vulnerability in the exec-approval allowlist mode that allows local attackers to execute unauthorized binaries by exploiting basename-only allowlist entries. Attackers can execute same-name local binaries ./echo without approval when security=allowlist and ask=on-miss are configured, bypassing intended path-based policy restrictions.
+  remediation: Upgrade to >= 2026.2.22
+  description_zh: 该漏洞与“OpenClaw 代码问题漏洞”相关。受影响版本为 2026.2.22 之前。成功利用后可能导致命令注入或任意代码执行。
+- id: CVE-2026-32988
+  title: OpenClaw 安全漏洞
+  severity: high
+  cvss: 7.5
+  affected_before: 2026.3.11
+  description: OpenClaw before 2026.3.11 contains a sandbox boundary bypass vulnerability in fs-bridge staged writes where temporary file creation and population are not pinned to a verified parent directory. Attackers can exploit a race condition in parent-path alias changes to write attacker-controlled bytes outside the intended validated path before the final guarded replace step executes.
+  remediation: Upgrade to >= 2026.3.11
+  description_zh: 该漏洞与“OpenClaw 安全漏洞”相关。受影响版本为 2026.3.11 之前。成功利用后可能导致目录遍历、越权读写或沙箱边界突破。
+- id: CVE-2026-32982
+  title: OpenClaw 日志信息泄露漏洞
+  severity: high
+  cvss: 7.5
+  affected_before: 2026.3.13
+  description: OpenClaw before 2026.3.13 contains an information disclosure vulnerability in the fetchRemoteMedia function that exposes Telegram bot tokens in error messages. When media downloads fail, the original Telegram file URLs containing bot tokens are embedded in MediaFetchError strings and leaked to logs and error surfaces.
+  remediation: Upgrade to >= 2026.3.13
+  description_zh: 该漏洞与“OpenClaw 日志信息泄露漏洞”相关。受影响版本为 2026.3.13 之前。成功利用后可能导致敏感信息、凭证或内部状态泄露。
+- id: CVE-2026-32971
+  title: OpenClaw 安全漏洞
+  severity: high
+  cvss: 8.0
+  affected_before: 2026.3.11
+  description: OpenClaw before 2026.3.11 contains an approval-integrity vulnerability in node-host system.run approvals that displays extracted shell payloads instead of the executed argv. Attackers can place wrapper binaries and induce wrapper-shaped commands to execute local code after operators approve misleading command text.
+  remediation: Upgrade to >= 2026.3.11
+  description_zh: 该漏洞与“OpenClaw 安全漏洞”相关。受影响版本为 2026.3.11 之前。成功利用后可能导致命令注入或任意代码执行。
+- id: CVE-2026-32920
+  title: OpenClaw 安全漏洞
+  severity: high
+  cvss: 8.8
+  affected_before: 2026.3.12
+  description: OpenClaw before 2026.3.12 automatically discovers and loads plugins from .OpenClaw/extensions/ without explicit trust verification, allowing arbitrary code execution. Attackers can execute malicious code by including crafted workspace plugins in cloned repositories that execute when users run OpenClaw from the directory.
+  remediation: Upgrade to >= 2026.3.12
+  description_zh: 该漏洞与“OpenClaw 安全漏洞”相关。受影响版本为 2026.3.12 之前。成功利用后可能导致命令注入或任意代码执行。
+- id: CVE-2026-32061
+  title: OpenClaw 路径遍历漏洞
+  severity: medium
+  cvss: 4.4
+  affected_before: 2026.2.17
+  description: OpenClaw versions prior to 2026.2.17 contain a path traversal vulnerability in the $include directive resolution that allows reading arbitrary local files outside the config directory boundary. Attackers with config modification capabilities can exploit this by specifying absolute paths, traversal sequences, or symlinks to access sensitive files readable by the OpenClaw process user, including API keys and credentials.
+  remediation: Upgrade to >= 2026.2.17
+  description_zh: 该漏洞与“OpenClaw 路径遍历漏洞”相关。受影响版本为 2026.2.17 之前。成功利用后可能导致敏感信息、凭证或内部状态泄露。
+- id: CVE-2026-32899
+  title: OpenClaw 安全漏洞
+  severity: medium
+  cvss: 4.3
+  affected_before: 2026.2.25
+  description: OpenClaw versions prior to 2026.2.25 fail to consistently apply sender-policy checks to reaction_* and pin_* non-message events before adding them to system-event context. Attackers can bypass configured DM policies and channel user allowlists to inject unauthorized reaction and pin events from restricted senders.
+  remediation: Upgrade to >= 2026.2.25
+  description_zh: 该漏洞与“OpenClaw 安全漏洞”相关。受影响版本为 2026.2.25 之前。成功利用后会对 OpenClaw 的认证、授权、沙箱隔离或运行安全造成影响。
+- id: CVE-2026-32898
+  title: OpenClaw 安全漏洞
+  severity: medium
+  cvss: 5.4
+  affected_before: 2026.2.23
+  description: OpenClaw versions prior to 2026.2.23 contain an authorization bypass vulnerability in the ACP client that auto-approves tool calls based on untrusted toolCall.kind metadata and permissive name heuristics. Attackers can bypass interactive approval prompts for read-class operations by spoofing tool metadata or using non-core read-like names to reach auto-approve paths.
+  remediation: Upgrade to >= 2026.2.23
+  description_zh: 该漏洞与“OpenClaw 安全漏洞”相关。受影响版本为 2026.2.23 之前。成功利用后可能导致未授权访问、权限提升或安全策略绕过。
+- id: CVE-2026-32896
+  title: OpenClaw 访问控制错误漏洞
+  severity: medium
+  cvss: 6.5
+  affected_before: 2026.2.21
+  description: OpenClaw versions prior to 2026.2.21 BlueBubbles webhook handler contains a passwordless fallback authentication path that allows unauthenticated webhook events in certain reverse-proxy or local routing configurations. Attackers can bypass webhook authentication by exploiting the loopback/proxy heuristics to send unauthenticated webhook events to the BlueBubbles plugin.
+  remediation: Upgrade to >= 2026.2.21
+  description_zh: 该漏洞与“OpenClaw 访问控制错误漏洞”相关。受影响版本为 2026.2.21 之前。成功利用后会对 OpenClaw 的认证、授权、沙箱隔离或运行安全造成影响。
+- id: CVE-2026-32895
+  title: OpenClaw 安全漏洞
+  severity: medium
+  cvss: 5.4
+  affected_before: 2026.2.26
+  description: OpenClaw versions prior to 2026.2.26 fail to enforce sender authorization in member and message subtype system event handlers, allowing unauthorized events to be enqueued. Attackers can bypass Slack DM allowlists and per-channel user allowlists by sending system events from non-allowlisted senders through message_changed, message_deleted, and thread_broadcast events.
+  remediation: Upgrade to >= 2026.2.26
+  description_zh: 该漏洞与“OpenClaw 安全漏洞”相关。受影响版本为 2026.2.26 之前。成功利用后会对 OpenClaw 的认证、授权、沙箱隔离或运行安全造成影响。
+- id: CVE-2026-32065
+  title: OpenClaw 安全漏洞
+  severity: medium
+  cvss: 6.5
+  affected_before: 2026.2.25
+  description: OpenClaw versions prior to 2026.2.25 contain an approval-integrity bypass vulnerability in system.run where rendered command text is used as approval identity while trimming argv token whitespace, but runtime execution uses raw argv. An attacker can craft a trailing-space executable token to execute a different binary than what the approver displayed, allowing unexpected command execution under the OpenClaw runtime user when they can influence command argv and reuse an approval context.
+  remediation: Upgrade to >= 2026.2.25
+  description_zh: 该漏洞与“OpenClaw 安全漏洞”相关。受影响版本为 2026.2.25 之前。成功利用后会对 OpenClaw 的认证、授权、沙箱隔离或运行安全造成影响。
+- id: CVE-2026-32057
+  title: OpenClaw 安全漏洞
+  severity: medium
+  cvss: 7.1
+  affected_before: 2026.2.25
+  description: OpenClaw versions prior to 2026.2.25 contain an authentication bypass vulnerability in the trusted-proxy Control UI pairing mechanism that accepts client.id=control-ui without proper device identity verification. An authenticated node role websocket client can exploit this by using the control-ui client identifier to skip pairing requirements and gain unauthorized access to node event execution flows.
+  remediation: Upgrade to >= 2026.2.25
+  description_zh: 该漏洞与“OpenClaw 安全漏洞”相关。受影响版本为 2026.2.25 之前。成功利用后可能导致未授权访问、权限提升或安全策略绕过。
+- id: CVE-2026-32053
+  title: OpenClaw 安全漏洞
+  severity: medium
+  cvss: 6.5
+  affected_before: 2026.2.23
+  description: OpenClaw versions prior to 2026.2.23 contain a vulnerability in Twilio webhook event deduplication where normalized event IDs are randomized per parse, allowing replay events to bypass manager dedupe checks. Attackers can replay Twilio webhook events to trigger duplicate or stale call-state transitions, potentially causing incorrect call handling and state corruption.
+  remediation: Upgrade to >= 2026.2.23
+  description_zh: 该漏洞与“OpenClaw 安全漏洞”相关。受影响版本为 2026.2.23 之前。成功利用后可能导致身份伪造、请求重放或认证被暴力猜解。
+- id: CVE-2026-32054
+  title: OpenClaw 后置链接漏洞
+  severity: medium
+  cvss: 7.8
+  affected_before: 2026.2.25
+  description: OpenClaw versions prior to 2026.2.25 contain a symlink traversal vulnerability in browser trace and download output path handling that allows local attackers to escape the managed temp root directory. An attacker with local access can create symlinks to route file writes outside the intended temp directory, enabling arbitrary file overwrite on the affected system.
+  remediation: Upgrade to >= 2026.2.25
+  description_zh: 该漏洞与“OpenClaw 后置链接漏洞”相关。受影响版本为 2026.2.25 之前。成功利用后可能导致目录遍历、越权读写或沙箱边界突破。
+- id: CVE-2026-32052
+  title: OpenClaw 安全漏洞
+  severity: medium
+  cvss: 9.8
+  affected_before: 2026.2.24
+  description: OpenClaw versions prior to 2026.2.24 contain a command injection vulnerability in the system.run shell-wrapper that allows attackers to execute hidden commands by injecting positional argv carriers after inline shell payloads. Attackers can craft misleading approval text while executing arbitrary commands through trailing positional arguments that bypass display context validation.
+  remediation: Upgrade to >= 2026.2.24
+  description_zh: 该漏洞与“OpenClaw 安全漏洞”相关。受影响版本为 2026.2.24 之前。成功利用后可能导致命令注入或任意代码执行。
+- id: CVE-2026-32040
+  title: OpenClaw 跨站脚本漏洞
+  severity: medium
+  cvss: 6.1
+  affected_before: 2026.2.23
+  description: OpenClaw versions prior to 2026.2.23 contain an html injection vulnerability in the HTML session exporter that allows attackers to execute arbitrary javascript by injecting malicious mimeType values in image content blocks. Attackers can craft session entries with specially crafted mimeType attributes that break out of the img src data-URL context to achieve cross-site scripting when exported HTML is opened.
+  remediation: Upgrade to >= 2026.2.23
+  description_zh: 该漏洞与“OpenClaw 跨站脚本漏洞”相关。受影响版本为 2026.2.23 之前。成功利用后可能导致跨站脚本、提示注入或界面上下文被劫持。
+- id: CVE-2026-32046
+  title: OpenClaw 安全漏洞
+  severity: medium
+  cvss: 9.8
+  affected_before: 2026.2.21
+  description: OpenClaw versions prior to 2026.2.21 contain an improper sandbox configuration vulnerability that allows attackers to execute arbitrary code by exploiting renderer-side vulnerabilities without requiring a sandbox escape. Attackers can leverage the disabled OS-level sandbox protections in the Chromium browser container to achieve code execution on the host system.
+  remediation: Upgrade to >= 2026.2.21
+  description_zh: 该漏洞与“OpenClaw 安全漏洞”相关。受影响版本为 2026.2.21 之前。成功利用后可能导致目录遍历、越权读写或沙箱边界突破。
+- id: CVE-2026-32045
+  title: OpenClaw 安全漏洞
+  severity: medium
+  cvss: 9.1
+  affected_before: 2026.2.21
+  description: OpenClaw versions prior to 2026.2.21 incorrectly apply tokenless Tailscale header authentication to HTTP gateway routes, allowing bypass of token and password requirements. Attackers on trusted networks can exploit this misconfiguration to access HTTP gateway routes without proper authentication credentials.
+  remediation: Upgrade to >= 2026.2.21
+  description_zh: 该漏洞与“OpenClaw 安全漏洞”相关。受影响版本为 2026.2.21 之前。成功利用后可能导致敏感信息、凭证或内部状态泄露。
+- id: CVE-2026-32044
+  title: OpenClaw 安全漏洞
+  severity: medium
+  cvss: 5.5
+  affected_before: 2026.3.2
+  description: OpenClaw versions prior to 2026.3.2 contain an archive extraction vulnerability in the tar.bz2 installer path that bypasses safety checks enforced on other archive formats. Attackers can craft malicious tar.bz2 skill archives to bypass special-entry blocking and extracted-size guardrails, causing local denial of service during skill installation.
+  remediation: Upgrade to >= 2026.3.2
+  description_zh: 该漏洞与“OpenClaw 安全漏洞”相关。受影响版本为 2026.3.2 之前。成功利用后可能导致拒绝服务、资源耗尽或稳定性下降。
+- id: CVE-2026-32043
+  title: OpenClaw 安全漏洞
+  severity: medium
+  cvss: 7.0
+  affected_before: 2026.2.25
+  description: OpenClaw versions prior to 2026.2.25 contain a time-of-check-time-of-use vulnerability in approval-bound system.run execution where the cwd parameter is validated at approval time but resolved at execution time. Attackers can retarget a symlinked cwd between approval and execution to bypass command execution restrictions and execute arbitrary commands on node hosts.
+  remediation: Upgrade to >= 2026.2.25
+  description_zh: 该漏洞与“OpenClaw 安全漏洞”相关。受影响版本为 2026.2.25 之前。成功利用后可能导致目录遍历、越权读写或沙箱边界突破。
+- id: CVE-2026-32923
+  title: OpenClaw 安全漏洞
+  severity: medium
+  cvss: 5.4
+  affected_before: 2026.3.11
+  description: OpenClaw before 2026.3.11 contains an authorization bypass vulnerability in Discord guild reaction ingestion that fails to enforce member users and roles allowlist checks. Non-allowlisted guild members can trigger reaction events accepted as trusted system events, injecting reaction text into downstream session context.
+  remediation: Upgrade to >= 2026.3.11
+  description_zh: 该漏洞与“OpenClaw 安全漏洞”相关。受影响版本为 2026.3.11 之前。成功利用后可能导致未授权访问、权限提升或安全策略绕过。
+- id: CVE-2026-32919
+  title: OpenClaw 安全漏洞
+  severity: medium
+  cvss: 6.1
+  affected_before: 2026.3.11
+  description: OpenClaw before 2026.3.11 contains an authorization bypass vulnerability allowing write-scoped callers to reach admin-only session reset logic. Attackers with operator.write scope can issue agent requests containing /new or /reset slash commands to reset targeted conversation state without holding operator.admin privileges.
+  remediation: Upgrade to >= 2026.3.11
+  description_zh: 该漏洞与“OpenClaw 安全漏洞”相关。受影响版本为 2026.3.11 之前。成功利用后可能导致未授权访问、权限提升或安全策略绕过。
+- id: CVE-2026-31997
+  title: OpenClaw 安全漏洞
+  severity: medium
+  cvss: 6.7
+  affected_before: 2026.3.1
+  description: OpenClaw versions prior to 2026.3.1 fail to pin executable identity for non-path-like argv[0] tokens in system.run approvals, allowing post-approval executable rebind attacks. Attackers can modify PATH resolution after approval to execute a different binary than the operator approved, enabling arbitrary command execution.
+  remediation: Upgrade to >= 2026.3.1
+  description_zh: 该漏洞与“OpenClaw 安全漏洞”相关。受影响版本为 2026.3.1 之前。成功利用后会对 OpenClaw 的认证、授权、沙箱隔离或运行安全造成影响。
+- id: CVE-2026-31993
+  title: OpenClaw 安全漏洞
+  severity: medium
+  cvss: 6.4
+  affected_before: 2026.2.22
+  description: OpenClaw versions prior to 2026.2.22 contain an allowlist parsing mismatch vulnerability in the macOS companion app that allows authenticated operators to bypass exec approval checks. Attackers with operator.write privileges and a paired macOS beta node can craft shell-chain payloads that pass incomplete allowlist validation and execute arbitrary commands on the paired host.
+  remediation: Upgrade to >= 2026.2.22
+  description_zh: 该漏洞与“OpenClaw 安全漏洞”相关。受影响版本为 2026.2.22 之前。成功利用后可能导致命令注入或任意代码执行。
+- id: CVE-2026-32039
+  title: OpenClaw 安全漏洞
+  severity: medium
+  cvss: 6.5
+  affected_before: 2026.2.22
+  description: OpenClaw versions prior to 2026.2.22 contain an authorization bypass vulnerability in the toolsBySender group policy matching that allows attackers to inherit elevated tool permissions through identifier collision attacks. Attackers can exploit untyped sender keys by forcing collisions with mutable identity values such as senderName or senderUsername to bypass sender-authorization policies and gain unauthorized access to privileged tools.
+  remediation: Upgrade to >= 2026.2.22
+  description_zh: 该漏洞与“OpenClaw 安全漏洞”相关。受影响版本为 2026.2.22 之前。成功利用后可能导致未授权访问、权限提升或安全策略绕过。
+- id: CVE-2026-32037
+  title: OpenClaw 代码问题漏洞
+  severity: medium
+  cvss: 6.5
+  affected_before: 2026.2.22
+  description: OpenClaw versions prior to 2026.2.22 fail to consistently validate redirect chains against configured mediaAllowHosts allowlists during MSTeams media downloads. Attackers can supply or influence attachment URLs to force redirects to non-allowlisted targets, bypassing SSRF boundary controls.
+  remediation: Upgrade to >= 2026.2.22
+  description_zh: 该漏洞与“OpenClaw 代码问题漏洞”相关。受影响版本为 2026.2.22 之前。成功利用后可能导致服务端请求伪造并访问内网或云元数据资源。
+- id: CVE-2026-31991
+  title: OpenClaw 安全漏洞
+  severity: medium
+  cvss: 4.6
+  affected_before: 2026.2.26
+  description: OpenClaw versions prior to 2026.2.26 contain an authorization bypass vulnerability where Signal group allowlist policy incorrectly accepts sender identities from DM pairing-store approvals. Attackers can exploit this boundary weakness by obtaining DM pairing approval to bypass group allowlist checks and gain unauthorized group access.
+  remediation: Upgrade to >= 2026.2.26
+  description_zh: 该漏洞与“OpenClaw 安全漏洞”相关。受影响版本为 2026.2.26 之前。成功利用后可能导致未授权访问、权限提升或安全策略绕过。
+- id: CVE-2026-29608
+  title: OpenClaw 参数注入漏洞
+  severity: medium
+  cvss: 6.7
+  affected_before: 2026.2.16
+  description: OpenClaw 2026.3.1 contains an approval integrity vulnerability in system.run node-host execution where argv rewriting changes command semantics. Attackers can place malicious local scripts in the working directory to execute unintended code despite operator approval of different command text.
+  remediation: Upgrade to >= 2026.2.16
+  description_zh: 该漏洞与“OpenClaw 参数注入漏洞”相关。受影响版本为 2026.2.16 之前。成功利用后会对 OpenClaw 的认证、授权、沙箱隔离或运行安全造成影响。
+- id: CVE-2026-32846
+  title: OpenClaw 路径遍历漏洞
+  severity: medium
+  cvss: 7.5
+  affected_before: 2026.2.16
+  description: OpenClaw through 2026.3.23 (fixed in commit 4797bbc) contains a path traversal vulnerability in media parsing that allows attackers to read arbitrary files by bypassing path validation in the isLikelyLocalPath() and isValidMedia() functions. Attackers can exploit incomplete validation and the allowBareFilename bypass to reference files outside the intended application sandbox, resulting in disclosure of sensitive information including system files, environment files, and SSH keys.
+  remediation: Upgrade to >= 2026.2.16
+  description_zh: 该漏洞与“OpenClaw 路径遍历漏洞”相关。受影响版本为 2026.2.16 之前。成功利用后可能导致敏感信息、凭证或内部状态泄露。
+- id: CVE-2026-31989
+  title: OpenClaw 代码问题漏洞
+  severity: medium
+  cvss: 6.3
+  affected_before: 2026.3.1
+  description: OpenClaw versions prior to 2026.3.1 contain a server-side request forgery vulnerability in web_search citation redirect resolution that uses a private-network-allowing SSRF policy. An attacker who can influence citation redirect targets can trigger internal-network requests from the OpenClaw host to loopback, private, or internal destinations.
+  remediation: Upgrade to >= 2026.3.1
+  description_zh: 该漏洞与“OpenClaw 代码问题漏洞”相关。受影响版本为 2026.3.1 之前。成功利用后可能导致服务端请求伪造并访问内网或云元数据资源。
+- id: CVE-2026-28449
+  title: OpenClaw 安全漏洞
+  severity: medium
+  cvss: 6.5
+  affected_before: 2026.2.25
+  description: OpenClaw versions prior to 2026.2.25 lack durable replay state for Nextcloud Talk webhook events, allowing valid signed webhook requests to be replayed without suppression. Attackers can capture and replay previously valid signed webhook requests to trigger duplicate inbound message processing and cause integrity or availability issues.
+  remediation: Upgrade to >= 2026.2.25
+  description_zh: 该漏洞与“OpenClaw 安全漏洞”相关。受影响版本为 2026.2.25 之前。成功利用后可能导致身份伪造、请求重放或认证被暴力猜解。
+- id: CVE-2026-27545
+  title: OpenClaw 安全漏洞
+  severity: medium
+  cvss: 4.7
+  affected_before: 2026.2.26
+  description: OpenClaw versions prior to 2026.2.26 contain an approval bypass vulnerability in system.run execution that allows attackers to execute commands from unintended filesystem locations by rebinding writable parent symlinks in the current working directory after approval. An attacker can modify mutable parent symlink path components between approval and execution time to redirect command execution to a different location while preserving the visible working directory string.
+  remediation: Upgrade to >= 2026.2.26
+  description_zh: 该漏洞与“OpenClaw 安全漏洞”相关。受影响版本为 2026.2.26 之前。成功利用后可能导致目录遍历、越权读写或沙箱边界突破。
+- id: CVE-2026-27524
+  title: OpenClaw 安全漏洞
+  severity: medium
+  cvss: 4.3
+  affected_before: 2026.2.21
+  description: OpenClaw versions prior to 2026.2.21 accept prototype-reserved keys in runtime /debug set override object values, allowing prototype pollution attacks. Authorized /debug set callers can inject __proto__, constructor, or prototype keys to manipulate object prototypes and bypass command gate restrictions.
+  remediation: Upgrade to >= 2026.2.21
+  description_zh: 该漏洞与“OpenClaw 安全漏洞”相关。受影响版本为 2026.2.21 之前。成功利用后会对 OpenClaw 的认证、授权、沙箱隔离或运行安全造成影响。
+- id: CVE-2026-27670
+  title: OpenClaw 安全漏洞
+  severity: medium
+  cvss: 5.3
+  affected_before: 2026.3.2
+  description: OpenClaw versions prior to 2026.3.2 contain a race condition vulnerability in ZIP extraction that allows local attackers to write files outside the intended destination directory. Attackers can exploit a time-of-check-time-of-use race between path validation and file write operations by rebinding parent directory symlinks to redirect writes outside the extraction root.
+  remediation: Upgrade to >= 2026.3.2
+  description_zh: 该漏洞与“OpenClaw 安全漏洞”相关。受影响版本为 2026.3.2 之前。成功利用后可能导致目录遍历、越权读写或沙箱边界突破。
+- id: CVE-2026-32036
+  title: OpenClaw 安全漏洞
+  severity: medium
+  cvss: 8.2
+  affected_before: 2026.2.6
+  description: OpenClaw gateway plugin versions prior to 2026.2.26 contain a path traversal vulnerability that allows remote attackers to bypass route authentication checks by manipulating /api/channels paths with encoded dot-segment traversal sequences. Attackers can craft alternate paths using encoded traversal patterns to access protected plugin channel routes when handlers normalize the incoming path, circumventing security controls.
+  remediation: Upgrade to >= 2026.2.6
+  description_zh: 该漏洞与“OpenClaw 安全漏洞”相关。受影响版本为 2026.2.6 之前。成功利用后可能导致目录遍历、越权读写或沙箱边界突破。
+- id: CVE-2026-27522
+  title: OpenClaw 路径遍历漏洞
+  severity: medium
+  cvss: 5.5
+  affected_before: 2026.2.24
+  description: OpenClaw versions prior to 2026.2.24 contain a local media root bypass vulnerability in sendAttachment and setGroupIcon message actions when sandboxRoot is unset. Attackers can hydrate media from local absolute paths to read arbitrary host files accessible by the runtime user.
+  remediation: Upgrade to >= 2026.2.24
+  description_zh: 该漏洞与“OpenClaw 路径遍历漏洞”相关。受影响版本为 2026.2.24 之前。成功利用后会对 OpenClaw 的认证、授权、沙箱隔离或运行安全造成影响。
+- id: CVE-2026-32035
+  title: OpenClaw 安全漏洞
+  severity: medium
+  cvss: 5.9
+  affected_before: 2026.3.2
+  description: OpenClaw versions prior to 2026.3.2 fail to pass the senderIsOwner flag when processing Discord voice transcripts in agentCommand, causing the flag to default to true. Non-owner voice participants can exploit this omission to access owner-only tools including gateway and cron functionality in mixed-trust channels.
+  remediation: Upgrade to >= 2026.3.2
+  description_zh: 该漏洞与“OpenClaw 安全漏洞”相关。受影响版本为 2026.3.2 之前。成功利用后可能导致敏感信息、凭证或内部状态泄露。
+- id: CVE-2026-32034
+  title: OpenClaw 操作系统命令注入漏洞
+  severity: medium
+  cvss: 8.1
+  affected_before: 2026.2.21
+  description: OpenClaw versions prior to 2026.2.21 contain an authentication bypass vulnerability in the Control UI when allowInsecureAuth is explicitly enabled and the gateway is exposed over plaintext HTTP, allowing attackers to bypass device identity and pairing verification. An attacker with leaked or intercepted credentials can obtain high-privilege Control UI access by exploiting the lack of secure authentication enforcement over unencrypted HTTP connections.
+  remediation: Upgrade to >= 2026.2.21
+  description_zh: 该漏洞与“OpenClaw 操作系统命令注入漏洞”相关。受影响版本为 2026.2.21 之前。成功利用后可能导致敏感信息、凭证或内部状态泄露。
+- id: CVE-2026-22181
+  title: OpenClaw 代码问题漏洞
+  severity: medium
+  cvss: 7.6
+  affected_before: 2026.3.2
+  description: OpenClaw versions prior to 2026.3.2 contain a DNS pinning bypass vulnerability in strict URL fetch paths that allows attackers to circumvent SSRF guards when environment proxy variables are configured. When HTTP_PROXY, HTTPS_PROXY, or ALL_PROXY environment variables are present, attacker-influenced URLs can be routed through proxy behavior instead of pinned-destination routing, enabling access to internal targets reachable from the proxy environment.
+  remediation: Upgrade to >= 2026.3.2
+  description_zh: 该漏洞与“OpenClaw 代码问题漏洞”相关。受影响版本为 2026.3.2 之前。成功利用后可能导致服务端请求伪造并访问内网或云元数据资源。
+- id: CVE-2026-32033
+  title: OpenClaw 路径遍历漏洞
+  severity: medium
+  cvss: 6.5
+  affected_before: 2026.2.24
+  description: OpenClaw versions prior to 2026.2.24 contain a path traversal vulnerability where @-prefixed absolute paths bypass workspace-only file-system boundary validation due to canonicalization mismatch. Attackers can exploit this by crafting @-prefixed paths like @/etc/passwd to read files outside the intended workspace boundary when tools.fs.workspaceOnly is enabled.
+  remediation: Upgrade to >= 2026.2.24
+  description_zh: 该漏洞与“OpenClaw 路径遍历漏洞”相关。受影响版本为 2026.2.24 之前。成功利用后可能导致目录遍历、越权读写或沙箱边界突破。
+- id: CVE-2026-22180
+  title: OpenClaw 后置链接漏洞
+  severity: medium
+  cvss: 5.3
+  affected_before: 2026.3.2
+  description: OpenClaw versions prior to 2026.3.2 contain a path-confinement bypass vulnerability in browser output handling that allows writes outside intended root directories. Attackers can exploit insufficient canonical path-boundary validation in file write operations to escape root-bound restrictions and write files to arbitrary locations.
+  remediation: Upgrade to >= 2026.3.2
+  description_zh: 该漏洞与“OpenClaw 后置链接漏洞”相关。受影响版本为 2026.3.2 之前。成功利用后会对 OpenClaw 的认证、授权、沙箱隔离或运行安全造成影响。
+- id: CVE-2026-22179
+  title: OpenClaw 操作系统命令注入漏洞
+  severity: medium
+  cvss: 7.2
+  affected_before: 2026.2.22
+  description: OpenClaw versions prior to 2026.2.22 in macOS node-host system.run contain an allowlist bypass vulnerability that allows remote attackers to execute non-allowlisted commands by exploiting improper parsing of command substitution tokens. Attackers can craft shell payloads with command substitution syntax within double-quoted text to bypass security restrictions and execute arbitrary commands on the system.
+  remediation: Upgrade to >= 2026.2.22
+  description_zh: 该漏洞与“OpenClaw 操作系统命令注入漏洞”相关。受影响版本为 2026.2.22 之前。成功利用后可能导致未授权访问、权限提升或安全策略绕过。
+- id: CVE-2026-22177
+  title: OpenClaw 安全漏洞
+  severity: medium
+  cvss: 8.8
+  affected_before: 2026.2.21
+  description: OpenClaw versions prior to 2026.2.21 fail to filter dangerous process-control environment variables from config env.vars, allowing startup-time code execution. Attackers can inject variables like NODE_OPTIONS or LD_* through configuration to execute arbitrary code in the OpenClaw gateway service runtime context.
+  remediation: Upgrade to >= 2026.2.21
+  description_zh: 该漏洞与“OpenClaw 安全漏洞”相关。受影响版本为 2026.2.21 之前。成功利用后可能导致命令注入或任意代码执行。
+- id: CVE-2026-22178
+  title: OpenClaw 安全漏洞
+  severity: medium
+  cvss: 8.2
+  affected_before: 2026.2.19
+  description: OpenClaw versions prior to 2026.2.19 construct RegExp objects directly from unescaped Feishu mention metadata in the stripBotMention function, allowing regex injection and denial of service. Attackers can craft nested-quantifier patterns or metacharacters in mention metadata to trigger catastrophic backtracking, block message processing, or remove unintended content before model processing.
+  remediation: Upgrade to >= 2026.2.19
+  description_zh: 该漏洞与“OpenClaw 安全漏洞”相关。受影响版本为 2026.2.19 之前。成功利用后可能导致拒绝服务、资源耗尽或稳定性下降。
+- id: CVE-2026-22174
+  title: OpenClaw 访问控制错误漏洞
+  severity: medium
+  cvss: 6.8
+  affected_before: 2026.2.22
+  description: OpenClaw versions prior to 2026.2.22 inject the x-OpenClaw-relay-token header into Chrome CDP probe traffic on loopback interfaces, allowing local processes to capture the Gateway authentication token. An attacker controlling a loopback port can intercept CDP reachability probes to the /json/version endpoint and reuse the leaked token as Gateway bearer authentication.
+  remediation: Upgrade to >= 2026.2.22
+  description_zh: 该漏洞与“OpenClaw 访问控制错误漏洞”相关。受影响版本为 2026.2.22 之前。成功利用后可能导致敏感信息、凭证或内部状态泄露。
+- id: CVE-2026-22170
+  title: OpenClaw 安全漏洞
+  severity: medium
+  cvss: 6.5
+  affected_before: 2026.2.22
+  description: OpenClaw versions prior to 2026.2.22 with the optional BlueBubbles plugin contain an access control bypass vulnerability where empty allowFrom configuration causes dmPolicy pairing and allowlist restrictions to be ineffective. Remote attackers can send direct messages to BlueBubbles accounts by exploiting the misconfigured allowlist validation logic to bypass intended sender authorization checks.
+  remediation: Upgrade to >= 2026.2.22
+  description_zh: 该漏洞与“OpenClaw 安全漏洞”相关。受影响版本为 2026.2.22 之前。成功利用后可能导致未授权访问、权限提升或安全策略绕过。
+- id: CVE-2026-22169
+  title: OpenClaw 操作系统命令注入漏洞
+  severity: medium
+  cvss: 6.7
+  affected_before: 2026.2.22
+  description: OpenClaw versions prior to 2026.2.22 contain an allowlist bypass vulnerability in the safeBins configuration that allows attackers to invoke external helpers through the compress-program option. When sort is explicitly added to tools.exec.safeBins, remote attackers can bypass intended safe-bin approval constraints by leveraging the compress-program parameter to execute unauthorized external programs.
+  remediation: Upgrade to >= 2026.2.22
+  description_zh: 该漏洞与“OpenClaw 操作系统命令注入漏洞”相关。受影响版本为 2026.2.22 之前。成功利用后可能导致未授权访问、权限提升或安全策略绕过。
+- id: CVE-2026-22168
+  title: OpenClaw 参数注入漏洞
+  severity: medium
+  cvss: 8.8
+  affected_before: 2026.2.21
+  description: OpenClaw versions prior to 2026.2.21 contain an approval-integrity mismatch vulnerability in system.run that allows authenticated operators to execute arbitrary trailing arguments after cmd.exe /c while approval text reflects only a benign command. Attackers can smuggle malicious arguments through cmd.exe /c to achieve local command execution on trusted Windows nodes with mismatched audit logs.
+  remediation: Upgrade to >= 2026.2.21
+  description_zh: 该漏洞与“OpenClaw 参数注入漏洞”相关。受影响版本为 2026.2.21 之前。成功利用后会对 OpenClaw 的认证、授权、沙箱隔离或运行安全造成影响。
+- id: CVE-2026-32041
+  title: OpenClaw 访问控制错误漏洞
+  severity: medium
+  cvss: 7.8
+  affected_before: 2026.3.1
+  description: OpenClaw versions prior to 2026.3.1 fail to properly handle authentication bootstrap errors during startup, allowing browser-control routes to remain accessible without authentication. Local processes or loopback-reachable SSRF paths can exploit this to access browser-control routes including evaluate-capable actions without valid credentials.
+  remediation: Upgrade to >= 2026.3.1
+  description_zh: 该漏洞与“OpenClaw 访问控制错误漏洞”相关。受影响版本为 2026.3.1 之前。成功利用后可能导致敏感信息、凭证或内部状态泄露。
+- id: CVE-2026-32031
+  title: OpenClaw 安全漏洞
+  severity: medium
+  cvss: 6.5
+  affected_before: 2026.2.26
+  description: OpenClaw versions prior to 2026.2.26 server-http contains an authentication bypass vulnerability in gateway authentication for plugin channel endpoints due to path canonicalization mismatch between the gateway guard and plugin handler routing. Attackers can bypass authentication by sending requests with alternative path encodings to access protected plugin channel APIs without proper gateway authentication.
+  remediation: Upgrade to >= 2026.2.26
+  description_zh: 该漏洞与“OpenClaw 安全漏洞”相关。受影响版本为 2026.2.26 之前。成功利用后可能导致未授权访问、权限提升或安全策略绕过。
+- id: CVE-2026-32030
+  title: OpenClaw 路径遍历漏洞
+  severity: medium
+  cvss: 7.5
+  affected_before: 2026.2.19
+  description: OpenClaw versions prior to 2026.2.19 contain a path traversal vulnerability in the stageSandboxMedia function that accepts arbitrary absolute paths when iMessage remote attachment fetching is enabled. An attacker who can tamper with attachment path metadata can disclose files readable by the OpenClaw process on the configured remote host via SCP.
+  remediation: Upgrade to >= 2026.2.19
+  description_zh: 该漏洞与“OpenClaw 路径遍历漏洞”相关。受影响版本为 2026.2.19 之前。成功利用后可能导致目录遍历、越权读写或沙箱边界突破。
+- id: CVE-2026-32027
+  title: OpenClaw 路径遍历漏洞
+  severity: medium
+  cvss: 6.5
+  affected_before: 2026.2.26
+  description: OpenClaw versions prior to 2026.2.26 contain an authorization bypass vulnerability where DM pairing-store identities are incorrectly eligible for group allowlist authorization checks. Attackers can exploit this cross-context authorization flaw by using a sender approved via DM pairing to satisfy group sender allowlist checks without explicit presence in groupAllowFrom, bypassing group message access controls.
+  remediation: Upgrade to >= 2026.2.26
+  description_zh: 该漏洞与“OpenClaw 路径遍历漏洞”相关。受影响版本为 2026.2.26 之前。成功利用后可能导致未授权访问、权限提升或安全策略绕过。
+- id: CVE-2026-32024
+  title: OpenClaw 后置链接漏洞
+  severity: medium
+  cvss: 7.5
+  affected_before: 2026.2.22
+  description: OpenClaw versions prior to 2026.2.22 contain a symlink traversal vulnerability in avatar handling that allows attackers to read arbitrary files outside the configured workspace boundary. Remote attackers can exploit this by requesting avatar resources through gateway surfaces to disclose local files accessible to the OpenClaw process.
+  remediation: Upgrade to >= 2026.2.22
+  description_zh: 该漏洞与“OpenClaw 后置链接漏洞”相关。受影响版本为 2026.2.22 之前。成功利用后可能导致目录遍历、越权读写或沙箱边界突破。
+- id: CVE-2026-32023
+  title: OpenClaw 安全漏洞
+  severity: medium
+  cvss: 7.1
+  affected_before: 2026.2.24
+  description: OpenClaw versions prior to 2026.2.24 contain an approval gating bypass vulnerability in system.run allowlist mode where nested transparent dispatch wrappers can suppress shell-wrapper detection. Attackers can exploit this by chaining multiple dispatch wrappers like /usr/bin/env to execute /bin/sh -c commands without triggering the expected approval prompt in allowlist plus ask=on-miss configurations.
+  remediation: Upgrade to >= 2026.2.24
+  description_zh: 该漏洞与“OpenClaw 安全漏洞”相关。受影响版本为 2026.2.24 之前。成功利用后可能导致命令注入或任意代码执行。
+- id: CVE-2026-32026
+  title: OpenClaw 路径遍历漏洞
+  severity: medium
+  cvss: 8.6
+  affected_before: 2026.2.24
+  description: OpenClaw versions prior to 2026.2.24 contain an improper path validation vulnerability in sandbox media handling that allows absolute paths under the host temporary directory outside the active sandbox root. Attackers can exploit this by providing malicious media references to read and exfiltrate arbitrary files from the host temporary directory through attachment delivery mechanisms.
+  remediation: Upgrade to >= 2026.2.24
+  description_zh: 该漏洞与“OpenClaw 路径遍历漏洞”相关。受影响版本为 2026.2.24 之前。成功利用后会对 OpenClaw 的认证、授权、沙箱隔离或运行安全造成影响。
+- id: CVE-2026-32302
+  title: OpenClaw 访问控制错误漏洞
+  severity: medium
+  cvss: 8.1
+  affected_before: 2026.3.11
+  description: OpenClaw is a personal AI assistant. Prior to 2026.3.11, browser-originated WebSocket connections could bypass origin validation when gateway.auth.mode was set to trusted-proxy and the request arrived with proxy headers. A page served from an untrusted origin could connect through a trusted reverse proxy, inherit proxy-authenticated identity, and establish a privileged operator session. This vulnerability is fixed in 2026.3.11.
+  remediation: Upgrade to >= 2026.3.11
+  description_zh: 该漏洞与“OpenClaw 访问控制错误漏洞”相关。受影响版本为 2026.3.11 之前。成功利用后会对 OpenClaw 的认证、授权、沙箱隔离或运行安全造成影响。
+- id: CVE-2026-32022
+  title: OpenClaw 安全漏洞
+  severity: medium
+  cvss: 6.5
+  affected_before: 2026.2.21
+  description: OpenClaw versions prior to 2026.2.21 contain a stdin-only policy bypass vulnerability in the grep tool within tools.exec.safeBins that allows attackers to read arbitrary files by supplying a pattern via the -e flag parameter. Attackers can include a positional filename operand to bypass file access restrictions and read sensitive files .env from the working directory.
+  remediation: Upgrade to >= 2026.2.21
+  description_zh: 该漏洞与“OpenClaw 安全漏洞”相关。受影响版本为 2026.2.21 之前。成功利用后可能导致未授权访问、权限提升或安全策略绕过。
+- id: CVE-2026-32021
+  title: OpenClaw 安全漏洞
+  severity: medium
+  cvss: 6.5
+  affected_before: 2026.2.22
+  description: OpenClaw versions prior to 2026.2.22 contain an authorization bypass vulnerability in the Feishu allowFrom allowlist implementation that accepts mutable sender display names instead of enforcing ID-only matching. An attacker can set a display name equal to an allowlisted ID string to bypass authorization checks and gain unauthorized access.
+  remediation: Upgrade to >= 2026.2.22
+  description_zh: 该漏洞与“OpenClaw 安全漏洞”相关。受影响版本为 2026.2.22 之前。成功利用后可能导致未授权访问、权限提升或安全策略绕过。
+- id: CVE-2026-32019
+  title: OpenClaw 代码问题漏洞
+  severity: medium
+  cvss: 7.4
+  affected_before: 2026.2.22
+  description: OpenClaw versions prior to 2026.2.22 contain incomplete IPv4 special-use range validation in the isPrivateIpv4() function, allowing requests to RFC-reserved ranges to bypass SSRF policy checks. Attackers with network reachability to special-use IPv4 ranges can exploit web_fetch functionality to access blocked addresses such as 198.18.0.0/15 and other non-global ranges.
+  remediation: Upgrade to >= 2026.2.22
+  description_zh: 该漏洞与“OpenClaw 代码问题漏洞”相关。受影响版本为 2026.2.22 之前。成功利用后可能导致服务端请求伪造并访问内网或云元数据资源。
+- id: CVE-2026-32017
+  title: OpenClaw 安全漏洞
+  severity: medium
+  cvss: 7.1
+  affected_before: 2026.2.19
+  description: OpenClaw versions prior to 2026.2.19 contain an allowlist bypass vulnerability in the exec safeBins policy that allows attackers to write arbitrary files using short-option payloads. Attackers can bypass argument validation by attaching short options like -o to whitelisted binaries, enabling unauthorized file-write operations that should be denied by safeBins checks.
+  remediation: Upgrade to >= 2026.2.19
+  description_zh: 该漏洞与“OpenClaw 安全漏洞”相关。受影响版本为 2026.2.19 之前。成功利用后可能导致未授权访问、权限提升或安全策略绕过。
+- id: CVE-2026-32010
+  title: OpenClaw 操作系统命令注入漏洞
+  severity: medium
+  cvss: 8.8
+  affected_before: 2026.2.22
+  description: OpenClaw versions prior to 2026.2.22 contain an allowlist bypass vulnerability in the safe-bin configuration when sort is manually added to tools.exec.safeBins. Attackers can invoke sort with the --compress-program flag to execute arbitrary external programs without operator approval in allowlist mode with ask=on-miss enabled.
+  remediation: Upgrade to >= 2026.2.22
+  description_zh: 该漏洞与“OpenClaw 操作系统命令注入漏洞”相关。受影响版本为 2026.2.22 之前。成功利用后可能导致未授权访问、权限提升或安全策略绕过。
+- id: CVE-2026-32009
+  title: OpenClaw 代码问题漏洞
+  severity: medium
+  cvss: 7.8
+  affected_before: 2026.2.24
+  description: OpenClaw versions prior to 2026.2.24 contain a policy bypass vulnerability in the safeBins allowlist evaluation that trusts static default directories including writable package-manager paths like /opt/homebrew/bin and /usr/local/bin. An attacker with write access to these trusted directories can place a malicious binary with the same name as an allowed executable to achieve arbitrary command execution within the OpenClaw runtime context.
+  remediation: Upgrade to >= 2026.2.24
+  description_zh: 该漏洞与“OpenClaw 代码问题漏洞”相关。受影响版本为 2026.2.24 之前。成功利用后可能导致未授权访问、权限提升或安全策略绕过。
+- id: CVE-2026-32007
+  title: OpenClaw 路径遍历漏洞
+  severity: medium
+  cvss: 8.1
+  affected_before: 2026.2.23
+  description: OpenClaw versions prior to 2026.2.23 contain a path traversal vulnerability in the experimental apply_patch tool that allows attackers with sandbox access to modify files outside the workspace directory by exploiting inconsistent enforcement of workspace-only checks on mounted paths. Attackers can use apply_patch operations on writable mounts outside the workspace root to access and modify arbitrary files on the system.
+  remediation: Upgrade to >= 2026.2.23
+  description_zh: 该漏洞与“OpenClaw 路径遍历漏洞”相关。受影响版本为 2026.2.23 之前。成功利用后可能导致目录遍历、越权读写或沙箱边界突破。
+- id: CVE-2026-32008
+  title: OpenClaw 安全漏洞
+  severity: medium
+  cvss: 6.5
+  affected_before: 2026.2.21
+  description: OpenClaw versions prior to 2026.2.21 contain an improper URL scheme validation vulnerability in the assertBrowserNavigationAllowed() function that allows authenticated users with browser-tool access to navigate to file:// URLs. Attackers can exploit this by accessing local files readable by the OpenClaw process user through browser snapshot and extraction actions to exfiltrate sensitive data.
+  remediation: Upgrade to >= 2026.2.21
+  description_zh: 该漏洞与“OpenClaw 安全漏洞”相关。受影响版本为 2026.2.21 之前。成功利用后会对 OpenClaw 的认证、授权、沙箱隔离或运行安全造成影响。
+- id: CVE-2026-32004
+  title: OpenClaw 安全漏洞
+  severity: medium
+  cvss: 8.2
+  affected_before: 2026.3.2
+  description: OpenClaw versions prior to 2026.3.2 contain an authentication bypass vulnerability in the /api/channels route classification due to canonicalization depth mismatch between auth-path classification and route-path canonicalization. Attackers can bypass plugin route authentication checks by submitting deeply encoded slash variants such as multi-encoded %2f to access protected /api/channels endpoints.
+  remediation: Upgrade to >= 2026.3.2
+  description_zh: 该漏洞与“OpenClaw 安全漏洞”相关。受影响版本为 2026.3.2 之前。成功利用后可能导致未授权访问、权限提升或安全策略绕过。
+- id: CVE-2026-32977
+  title: OpenClaw 安全漏洞
+  severity: medium
+  cvss: 6.3
+  affected_before: 2026.3.11
+  description: OpenClaw before 2026.3.11 contains a sandbox boundary bypass vulnerability in the fs-bridge writeFile commit step that uses an unanchored container path during the final move operation. An attacker can exploit a time-of-check-time-of-use race condition by modifying parent paths inside the sandbox to redirect committed files outside the validated writable path within the container mount namespace.
+  remediation: Upgrade to >= 2026.3.11
+  description_zh: 该漏洞与“OpenClaw 安全漏洞”相关。受影响版本为 2026.3.11 之前。成功利用后可能导致目录遍历、越权读写或沙箱边界突破。
+- id: CVE-2026-32003
+  title: OpenClaw 操作系统命令注入漏洞
+  severity: medium
+  cvss: 7.2
+  affected_before: 2026.2.22
+  description: OpenClaw versions prior to 2026.2.22 contain an environment variable injection vulnerability in the system.run function that allows attackers to bypass command allowlist restrictions via SHELLOPTS and PS4 environment variables. An attacker who can invoke system.run with request-scoped environment variables can execute arbitrary shell commands outside the intended allowlisted command body through bash xtrace expansion.
+  remediation: Upgrade to >= 2026.2.22
+  description_zh: 该漏洞与“OpenClaw 操作系统命令注入漏洞”相关。受影响版本为 2026.2.22 之前。成功利用后可能导致命令注入或任意代码执行。
+- id: CVE-2026-32002
+  title: OpenClaw 信息泄露漏洞
+  severity: medium
+  cvss: 6.5
+  affected_before: 2026.2.23
+  description: OpenClaw versions prior to 2026.2.23 contain a sandbox bypass vulnerability in the sandboxed image tool that fails to enforce tools.fs.workspaceOnly restrictions on mounted sandbox paths, allowing attackers to read out-of-workspace files. Attackers can load restricted mounted images and exfiltrate them through vision model provider requests to bypass sandbox confidentiality controls.
+  remediation: Upgrade to >= 2026.2.23
+  description_zh: 该漏洞与“OpenClaw 信息泄露漏洞”相关。受影响版本为 2026.2.23 之前。成功利用后会对 OpenClaw 的认证、授权、沙箱隔离或运行安全造成影响。
+- id: CVE-2026-32921
+  title: OpenClaw 安全漏洞
+  severity: medium
+  cvss: 5.0
+  affected_before: 2026.3.8
+  description: OpenClaw before 2026.3.8 contains an approval bypass vulnerability in system.run where mutable script operands are not bound across approval and execution phases. Attackers can obtain approval for script execution, modify the approved script file before execution, and execute different content while maintaining the same approved command shape.
+  remediation: Upgrade to >= 2026.3.8
+  description_zh: 该漏洞与“OpenClaw 安全漏洞”相关。受影响版本为 2026.3.8 之前。成功利用后会对 OpenClaw 的认证、授权、沙箱隔离或运行安全造成影响。
+- id: CVE-2026-32001
+  title: OpenClaw 安全漏洞
+  severity: medium
+  cvss: 5.4
+  affected_before: 2026.2.22
+  description: OpenClaw versions prior to 2026.2.22 contain an authentication bypass vulnerability that allows clients authenticated with a shared gateway token to connect as role=node without device identity verification. Attackers can exploit this by claiming the node role during WebSocket handshake to inject unauthorized node.event calls, triggering agent.request and voice.transcript flows without proper device pairing.
+  remediation: Upgrade to >= 2026.2.22
+  description_zh: 该漏洞与“OpenClaw 安全漏洞”相关。受影响版本为 2026.2.22 之前。成功利用后可能导致敏感信息、凭证或内部状态泄露。
+- id: CVE-2026-27646
+  title: OpenClaw 安全漏洞
+  severity: medium
+  cvss: 6.1
+  affected_before: 2026.3.7
+  description: OpenClaw versions prior to 2026.3.7 contain a sandbox escape vulnerability in the /acp spawn command that allows authorized sandboxed sessions to initialize host-side ACP runtime. Attackers can bypass sandbox restrictions by invoking the /acp spawn slash-command to cross from sandboxed chat context into host-side ACP session initialization when ACP is enabled.
+  remediation: Upgrade to >= 2026.3.7
+  description_zh: 该漏洞与“OpenClaw 安全漏洞”相关。受影响版本为 2026.3.7 之前。成功利用后可能导致目录遍历、越权读写或沙箱边界突破。
+- id: CVE-2026-32005
+  title: OpenClaw 安全漏洞
+  severity: medium
+  cvss: 8.1
+  affected_before: 2026.2.22
+  description: OpenClaw versions prior to 2026.2.25 fail to enforce sender authorization checks for interactive callbacks including block_action, view_submission, and view_closed in shared workspace deployments. Unauthorized workspace members can bypass allowFrom restrictions and channel user allowlists to enqueue system-event text into active sessions.
+  remediation: Upgrade to >= 2026.2.22
+  description_zh: 该漏洞与“OpenClaw 安全漏洞”相关。受影响版本为 2026.2.22 之前。成功利用后会对 OpenClaw 的认证、授权、沙箱隔离或运行安全造成影响。
+- id: CVE-2026-27183
+  title: OpenClaw 安全漏洞
+  severity: medium
+  cvss: 5.3
+  affected_before: 2026.3.7
+  description: OpenClaw versions prior to 2026.3.7 contain a shell approval gating bypass vulnerability in system.run dispatch-wrapper handling that allows attackers to skip shell wrapper approval requirements. The approval classifier and execution planner apply different depth-boundary rules, permitting exactly four transparent dispatch wrappers like repeated env invocations before /bin/sh -c to bypass security=allowlist approval gating by misaligning classification with execution planning.
+  remediation: Upgrade to >= 2026.3.7
+  description_zh: 该漏洞与“OpenClaw 安全漏洞”相关。受影响版本为 2026.3.7 之前。成功利用后可能导致命令注入或任意代码执行。
+- id: CVE-2026-30741
+  title: OpenClaw 安全漏洞
+  severity: medium
+  cvss: 9.8
+  affected_before: 2026.2.16
+  description: A remote code execution (RCE) vulnerability in OpenClaw Agent Platform v2026.2.6 allows attackers to execute arbitrary code via a Request-Side prompt injection attack.
+  remediation: Upgrade to >= 2026.2.16
+  description_zh: 该漏洞与“OpenClaw 安全漏洞”相关。受影响版本为 2026.2.16 之前。成功利用后可能导致命令注入或任意代码执行。
+- id: CVE-2026-4039
+  title: OpenClaw 代码注入漏洞
+  severity: medium
+  cvss: 8.8
+  affected_before: 2026.2.21
+  description: A vulnerability was determined in OpenClaw 2026.2.19-2. This vulnerability affects the function applySkillConfigenvOverrides of the component Skill Env Handler. Executing a manipulation can lead to code injection. It is possible to launch the attack remotely. Upgrading to version 2026.2.21-beta.1 is able to resolve this issue. This patch is called 8c9f35cdb51692b650ddf05b259ccdd75cc9a83c. It is recommended to upgrade the affected component.
+  remediation: Upgrade to >= 2026.2.21
+  description_zh: 该漏洞与“OpenClaw 代码注入漏洞”相关。受影响版本为 2026.2.21 之前。成功利用后可能导致命令注入或任意代码执行。
+- id: CVE-2026-32897
+  title: OpenClaw 加密问题漏洞
+  severity: low
+  cvss: 5.3
+  affected_before: 2026.2.22
+  description: OpenClaw versions prior to 2026.2.22 reuse gateway.auth.token as a fallback hash secret for owner-ID prompt obfuscation when commands.ownerDisplay is set to hash and commands.ownerDisplaySecret is unset, creating dual-use of authentication secrets across security domains. Attackers with access to system prompts sent to third-party model providers can derive the gateway authentication token from the hash outputs, compromising gateway authentication security.
+  remediation: Upgrade to >= 2026.2.22
+  description_zh: 该漏洞与“OpenClaw 加密问题漏洞”相关。受影响版本为 2026.2.22 之前。成功利用后会对 OpenClaw 的认证、授权、沙箱隔离或运行安全造成影响。
+- id: CVE-2026-32067
+  title: OpenClaw 安全漏洞
+  severity: low
+  cvss: 8.1
+  affected_before: 2026.2.26
+  description: OpenClaw versions prior to 2026.2.26 contains an authorization bypass vulnerability in the pairing-store access control for direct message pairing policy that allows attackers to reuse pairing approvals across multiple accounts. An attacker approved as a sender in one account can be automatically accepted in another account in multi-account deployments without explicit approval, bypassing authorization boundaries.
+  remediation: Upgrade to >= 2026.2.26
+  description_zh: 该漏洞与“OpenClaw 安全漏洞”相关。受影响版本为 2026.2.26 之前。成功利用后可能导致未授权访问、权限提升或安全策略绕过。
+- id: CVE-2026-32058
+  title: OpenClaw 安全漏洞
+  severity: low
+  cvss: 6.5
+  affected_before: 2026.2.26
+  description: OpenClaw versions prior to 2026.2.26 contain an approval context-binding weakness in system.run execution flows with host=node that allows reuse of previously approved requests with modified environment variables. Attackers with access to an approval id can exploit this by reusing an approval with changed env input, bypassing execution-integrity controls in approval-enabled workflows.
+  remediation: Upgrade to >= 2026.2.26
+  description_zh: 该漏洞与“OpenClaw 安全漏洞”相关。受影响版本为 2026.2.26 之前。成功利用后会对 OpenClaw 的认证、授权、沙箱隔离或运行安全造成影响。
+- id: CVE-2026-32050
+  title: OpenClaw 安全漏洞
+  severity: low
+  cvss: 5.3
+  affected_before: 2026.2.25
+  description: OpenClaw versions prior to 2026.2.25 contain an access control vulnerability in signal reaction notification handling that allows unauthorized senders to enqueue status events before authorization checks are applied. Attackers can exploit the reaction-only event path in event-handler.ts to queue signal reaction status lines for sessions without proper DM or group access validation.
+  remediation: Upgrade to >= 2026.2.25
+  description_zh: 该漏洞与“OpenClaw 安全漏洞”相关。受影响版本为 2026.2.25 之前。成功利用后可能导致未授权访问、权限提升或安全策略绕过。
+- id: CVE-2026-32029
+  title: OpenClaw 数据伪造问题漏洞
+  severity: low
+  cvss: 5.3
+  affected_before: 2026.2.21
+  description: OpenClaw versions prior to 2026.2.21 improperly parse the left-most X-Forwarded-For header value when requests originate from configured trusted proxies, allowing attackers to spoof client IP addresses. In proxy chains that append or preserve header values, attackers can inject malicious header content to influence security decisions including authentication rate-limiting and IP-based access controls.
+  remediation: Upgrade to >= 2026.2.21
+  description_zh: 该漏洞与“OpenClaw 数据伪造问题漏洞”相关。受影响版本为 2026.2.21 之前。成功利用后可能导致未授权访问、权限提升或安全策略绕过。
+- id: CVE-2026-32028
+  title: OpenClaw 安全漏洞
+  severity: low
+  cvss: 5.3
+  affected_before: 2026.2.25
+  description: OpenClaw versions prior to 2026.2.25 fail to enforce dmPolicy and allowFrom authorization checks on Discord direct-message reaction notifications, allowing non-allowlisted users to enqueue reaction-derived system events. Attackers can exploit this inconsistency by reacting to bot-authored DM messages to bypass DM authorization restrictions and trigger downstream automation or tool policies.
+  remediation: Upgrade to >= 2026.2.25
+  description_zh: 该漏洞与“OpenClaw 安全漏洞”相关。受影响版本为 2026.2.25 之前。成功利用后会对 OpenClaw 的认证、授权、沙箱隔离或运行安全造成影响。
+- id: CVE-2026-32020
+  title: OpenClaw 后置链接漏洞
+  severity: low
+  cvss: 5.5
+  affected_before: 2026.2.22
+  description: OpenClaw versions prior to 2026.2.22 contain a path traversal vulnerability in the static file handler that follows symbolic links, allowing out-of-root file reads. Attackers can place symlinks under the Control UI root directory to bypass directory confinement checks and read arbitrary files outside the intended root.
+  remediation: Upgrade to >= 2026.2.22
+  description_zh: 该漏洞与“OpenClaw 后置链接漏洞”相关。受影响版本为 2026.2.22 之前。成功利用后可能导致目录遍历、越权读写或沙箱边界突破。
+- id: CVE-2026-32018
+  title: OpenClaw 竞争条件问题漏洞
+  severity: low
+  cvss: 3.6
+  affected_before: 2026.2.19
+  description: OpenClaw versions prior to 2026.2.19 contain a race condition vulnerability in concurrent updateRegistry and removeRegistryEntry operations for sandbox containers and browsers. Attackers can exploit unsynchronized read-modify-write operations without locking to cause registry updates to lose data, resurrect removed entries, or corrupt sandbox state affecting list, prune, and recreate operations.
+  remediation: Upgrade to >= 2026.2.19
+  description_zh: 该漏洞与“OpenClaw 竞争条件问题漏洞”相关。受影响版本为 2026.2.19 之前。成功利用后会对 OpenClaw 的认证、授权、沙箱隔离或运行安全造成影响。
+- id: CVE-2026-32006
+  title: OpenClaw 安全漏洞
+  severity: low
+  cvss: 4.3
+  affected_before: 2026.2.26
+  description: OpenClaw versions prior to 2026.2.26 contain an authorization bypass vulnerability where DM pairing-store identities are incorrectly treated as group allowlist identities when dmPolicy=pairing and groupPolicy=allowlist. Remote attackers can send messages and reactions as DM-paired identities without explicit groupAllowFrom membership to bypass group sender authorization checks.
+  remediation: Upgrade to >= 2026.2.26
+  description_zh: 该漏洞与“OpenClaw 安全漏洞”相关。受影响版本为 2026.2.26 之前。成功利用后可能导致未授权访问、权限提升或安全策略绕过。
+- id: CVE-2026-32970
+  title: OpenClaw 安全漏洞
+  severity: low
+  cvss: 3.3
+  affected_before: 2026.3.11
+  description: OpenClaw before 2026.3.11 contains a credential fallback vulnerability where unavailable local gateway.auth.token and gateway.auth.password SecretRefs are treated as unset, allowing fallback to remote credentials in local mode. Attackers can exploit misconfigured local auth references to cause CLI and helper paths to select incorrect credential sources, potentially bypassing intended local authentication boundaries.
+  remediation: Upgrade to >= 2026.3.11
+  description_zh: 该漏洞与“OpenClaw 安全漏洞”相关。受影响版本为 2026.3.11 之前。成功利用后可能导致敏感信息、凭证或内部状态泄露。
+- id: CVE-2026-4040
+  title: OpenClaw 安全漏洞
+  severity: low
+  cvss: 5.5
+  affected_before: 2026.2.19
+  description: A vulnerability was identified in OpenClaw up to 2026.2.17. This issue affects the function tools.exec.safeBins of the component File Existence Handler. The manipulation leads to information exposure through discrepancy. The attack needs to be performed locally. Upgrading to version 2026.2.19-beta.1 is capable of addressing this issue. The identifier of the patch is bafdbb6f112409a65decd3d4e7350fbd637c7754. Upgrading the affected component is advised.
+  remediation: Upgrade to >= 2026.2.19
+  description_zh: 该漏洞与“OpenClaw 安全漏洞”相关。受影响版本为 2026.2.19 之前。成功利用后会对 OpenClaw 的认证、授权、沙箱隔离或运行安全造成影响。

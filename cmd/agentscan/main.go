@@ -237,7 +237,7 @@ func scanCmd() *cobra.Command {
 		},
 	}
 
-	cmd.Flags().IntSliceP("ports", "P", []int{18789, 18792, 3000, 8080, 8888}, "扫描端口列表")
+	cmd.Flags().IntSliceP("ports", "P", []int{18789, 18790, 18792, 3000, 8080, 8888}, "扫描端口列表")
 	cmd.Flags().DurationP("timeout", "t", 3*time.Second, "连接超时")
 	cmd.Flags().IntP("concurrency", "c", 100, "并发数")
 	cmd.Flags().String("depth", "l3", "扫描深度 (l1|l2|l3)")

@@ -195,13 +195,74 @@ func TestTaskEventsAPI(t *testing.T) {
 	assert.GreaterOrEqual(t, resp.Total, 3)
 }
 
+func TestTaskTargetsAPI(t *testing.T) {
+	srv, token := setupTestServer(t)
+	ctx := context.Background()
+	taskID := uuid.New().String()
+	assetID := uuid.New().String()
+
+	require.NoError(t, srv.store.CreateTask(ctx, &models.Task{
+		ID:             taskID,
+		Name:           "target-task",
+		Targets:        "127.0.0.1,127.0.0.2",
+		Status:         models.TaskStatusCompleted,
+		Type:           models.TaskTypeInstant,
+		TotalTargets:   2,
+		ScannedTargets: 2,
+	}))
+	require.NoError(t, srv.store.CreateAsset(ctx, &models.Asset{
+		ID:         assetID,
+		TaskID:     taskID,
+		IP:         "127.0.0.1",
+		Port:       18789,
+		AgentType:  "openclaw",
+		Version:    "1.0.0",
+		AuthMode:   "token_auth",
+		RiskLevel:  models.RiskLow,
+		Status:     models.AssetStatusActive,
+		Confidence: 88,
+	}))
+	require.NoError(t, srv.store.CreateVulnerability(ctx, &models.Vulnerability{
+		ID:       uuid.New().String(),
+		TaskID:   taskID,
+		AssetID:  assetID,
+		Title:    "test-vuln",
+		Severity: models.SeverityHigh,
+	}))
+
+	req := httptest.NewRequest("GET", "/api/v1/tasks/"+taskID+"/targets", nil)
+	req.Header.Set("Authorization", "Bearer "+token)
+	w := httptest.NewRecorder()
+	srv.router.ServeHTTP(w, req)
+	assert.Equal(t, http.StatusOK, w.Code)
+
+	var resp struct {
+		Data []struct {
+			Target     string `json:"target"`
+			Status     string `json:"status"`
+			StatusText string `json:"status_text"`
+			VulnCount  int    `json:"vuln_count"`
+		} `json:"data"`
+		Total int `json:"total"`
+	}
+	require.NoError(t, json.Unmarshal(w.Body.Bytes(), &resp))
+	require.Len(t, resp.Data, 2)
+	assert.Equal(t, 2, resp.Total)
+	assert.Equal(t, "127.0.0.1", resp.Data[0].Target)
+	assert.Equal(t, "identified", resp.Data[0].Status)
+	assert.Equal(t, 1, resp.Data[0].VulnCount)
+	assert.Equal(t, "127.0.0.2", resp.Data[1].Target)
+	assert.Equal(t, "scanned_no_agent", resp.Data[1].Status)
+	assert.Equal(t, "未识别 Agent", resp.Data[1].StatusText)
+}
+
 func TestProtectedEndpointsRequireAuth(t *testing.T) {
 	cfg := config.Default()
 	s, _ := store.NewGormStoreSimple("sqlite", ":memory:")
 	s.AutoMigrate()
 	srv := NewServer(cfg, s, eventbus.NewLocal(), nil)
 
-	endpoints := []string{"/api/v1/tasks", "/api/v1/assets", "/api/v1/vulns", "/api/v1/dashboard/stats"}
+	endpoints := []string{"/api/v1/tasks", "/api/v1/assets", "/api/v1/vulns", "/api/v1/dashboard/stats", "/api/v1/tasks/x/targets"}
 	for _, ep := range endpoints {
 		req := httptest.NewRequest("GET", ep, nil)
 		w := httptest.NewRecorder()

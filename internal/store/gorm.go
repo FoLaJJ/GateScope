@@ -2,18 +2,24 @@ package store
 
 import (
 	"context"
+	"errors"
 	"fmt"
+	"strings"
+	"sync"
+	"time"
 
 	"github.com/AutoScan/agentscan/internal/core/config"
 	"github.com/AutoScan/agentscan/internal/models"
 	"gorm.io/driver/postgres"
 	"gorm.io/driver/sqlite"
 	"gorm.io/gorm"
-	"gorm.io/gorm/logger"
+	gormlogger "gorm.io/gorm/logger"
 )
 
 type gormStore struct {
-	db *gorm.DB
+	db       *gorm.DB
+	isSQLite bool
+	writeMu  sync.Mutex
 }
 
 // NewGormStore creates a Store backed by GORM using the full application config.
@@ -29,7 +35,7 @@ func NewGormStore(cfg *config.Config) (Store, error) {
 	}
 
 	db, err := gorm.Open(dialector, &gorm.Config{
-		Logger: logger.Default.LogMode(logger.Silent),
+		Logger: gormlogger.Default.LogMode(gormlogger.Silent),
 	})
 	if err != nil {
 		return nil, fmt.Errorf("open database: %w", err)
@@ -39,17 +45,37 @@ func NewGormStore(cfg *config.Config) (Store, error) {
 	if err != nil {
 		return nil, fmt.Errorf("get sql.DB: %w", err)
 	}
-	if cfg.Database.MaxOpenConn > 0 {
-		sqlDB.SetMaxOpenConns(cfg.Database.MaxOpenConn)
-	}
-	if cfg.Database.MaxIdleConn > 0 {
-		sqlDB.SetMaxIdleConns(cfg.Database.MaxIdleConn)
+	isSQLite := cfg.Database.Driver == "sqlite"
+	if isSQLite {
+		// SQLite is prone to "database is locked" when multiple pooled connections
+		// try to write concurrently. Keep a single shared connection and enable
+		// a busy timeout for transient writer contention.
+		sqlDB.SetMaxOpenConns(1)
+		sqlDB.SetMaxIdleConns(1)
+		if err := db.Exec("PRAGMA busy_timeout = 5000").Error; err != nil {
+			return nil, fmt.Errorf("set sqlite busy_timeout: %w", err)
+		}
+		if !isInMemorySQLite(cfg.Database.DSN) {
+			if err := db.Exec("PRAGMA journal_mode = WAL").Error; err != nil {
+				return nil, fmt.Errorf("set sqlite journal_mode wal: %w", err)
+			}
+		}
+	} else {
+		if cfg.Database.MaxOpenConn > 0 {
+			sqlDB.SetMaxOpenConns(cfg.Database.MaxOpenConn)
+		}
+		if cfg.Database.MaxIdleConn > 0 {
+			sqlDB.SetMaxIdleConns(cfg.Database.MaxIdleConn)
+		}
+		if cfg.Database.MaxLifetime > 0 {
+			sqlDB.SetConnMaxLifetime(cfg.Database.MaxLifetime)
+		}
 	}
 	if cfg.Database.MaxLifetime > 0 {
 		sqlDB.SetConnMaxLifetime(cfg.Database.MaxLifetime)
 	}
 
-	return &gormStore{db: db}, nil
+	return &gormStore{db: db, isSQLite: isSQLite}, nil
 }
 
 // NewGormStoreSimple creates a Store with minimal config (for tests).
@@ -78,7 +104,18 @@ func (s *gormStore) Close() error {
 // ---------- Tasks ----------
 
 func (s *gormStore) CreateTask(ctx context.Context, task *models.Task) error {
-	return s.db.WithContext(ctx).Create(task).Error
+	return s.withWriteSession(ctx, func(db *gorm.DB) error {
+		enableMDNS := task.EnableMDNS
+		return db.Transaction(func(tx *gorm.DB) error {
+			if err := tx.Create(task).Error; err != nil {
+				return err
+			}
+			if !enableMDNS {
+				return tx.Model(task).Update("enable_m_dns", false).Error
+			}
+			return nil
+		})
+	})
 }
 
 func (s *gormStore) GetTask(ctx context.Context, id string) (*models.Task, error) {
@@ -90,24 +127,28 @@ func (s *gormStore) GetTask(ctx context.Context, id string) (*models.Task, error
 }
 
 func (s *gormStore) UpdateTask(ctx context.Context, task *models.Task) error {
-	return s.db.WithContext(ctx).Save(task).Error
+	return s.withWriteSession(ctx, func(db *gorm.DB) error {
+		return db.Save(task).Error
+	})
 }
 
 func (s *gormStore) DeleteTask(ctx context.Context, id string) error {
-	return s.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
-		if err := tx.Delete(&models.TaskEvent{}, "task_id = ?", id).Error; err != nil {
-			return err
-		}
-		if err := tx.Delete(&models.Vulnerability{}, "task_id = ?", id).Error; err != nil {
-			return err
-		}
-		if err := tx.Delete(&models.Asset{}, "task_id = ?", id).Error; err != nil {
-			return err
-		}
-		if err := tx.Delete(&models.ScanResult{}, "task_id = ?", id).Error; err != nil {
-			return err
-		}
-		return tx.Delete(&models.Task{}, "id = ?", id).Error
+	return s.withWriteSession(ctx, func(db *gorm.DB) error {
+		return db.Transaction(func(tx *gorm.DB) error {
+			if err := tx.Delete(&models.TaskEvent{}, "task_id = ?", id).Error; err != nil {
+				return err
+			}
+			if err := tx.Delete(&models.Vulnerability{}, "task_id = ?", id).Error; err != nil {
+				return err
+			}
+			if err := tx.Delete(&models.Asset{}, "task_id = ?", id).Error; err != nil {
+				return err
+			}
+			if err := tx.Delete(&models.ScanResult{}, "task_id = ?", id).Error; err != nil {
+				return err
+			}
+			return tx.Delete(&models.Task{}, "id = ?", id).Error
+		})
 	})
 }
 
@@ -140,7 +181,9 @@ func (s *gormStore) ListTasks(ctx context.Context, filter TaskFilter) ([]models.
 }
 
 func (s *gormStore) CreateTaskEvent(ctx context.Context, event *models.TaskEvent) error {
-	return s.db.WithContext(ctx).Create(event).Error
+	return s.withWriteSession(ctx, func(db *gorm.DB) error {
+		return db.Create(event).Error
+	})
 }
 
 func (s *gormStore) ListTaskEvents(ctx context.Context, taskID string, limit int) ([]models.TaskEvent, error) {
@@ -163,7 +206,9 @@ func (s *gormStore) ListTaskEvents(ctx context.Context, taskID string, limit int
 // ---------- Assets ----------
 
 func (s *gormStore) CreateAsset(ctx context.Context, asset *models.Asset) error {
-	return s.db.WithContext(ctx).Create(asset).Error
+	return s.withWriteSession(ctx, func(db *gorm.DB) error {
+		return db.Create(asset).Error
+	})
 }
 
 func (s *gormStore) GetAsset(ctx context.Context, id string) (*models.Asset, error) {
@@ -175,22 +220,32 @@ func (s *gormStore) GetAsset(ctx context.Context, id string) (*models.Asset, err
 }
 
 func (s *gormStore) UpsertAsset(ctx context.Context, asset *models.Asset) error {
-	return s.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
-		var existing models.Asset
-		err := tx.Where("ip = ? AND port = ? AND task_id = ?", asset.IP, asset.Port, asset.TaskID).First(&existing).Error
-		if err == nil {
-			existing.AgentType = asset.AgentType
-			existing.Version = asset.Version
-			existing.AuthMode = asset.AuthMode
-			existing.AgentID = asset.AgentID
-			existing.Confidence = asset.Confidence
-			existing.RiskLevel = asset.RiskLevel
-			existing.Status = models.AssetStatusActive
-			existing.ProbeDetails = asset.ProbeDetails
-			existing.Metadata = asset.Metadata
-			return tx.Save(&existing).Error
-		}
-		return tx.Create(asset).Error
+	return s.withWriteSession(ctx, func(db *gorm.DB) error {
+		return db.Transaction(func(tx *gorm.DB) error {
+			var existing models.Asset
+			err := tx.Where("ip = ? AND port = ? AND task_id = ?", asset.IP, asset.Port, asset.TaskID).First(&existing).Error
+			switch {
+			case err == nil:
+				existing.AgentType = asset.AgentType
+				existing.Version = asset.Version
+				existing.AuthMode = asset.AuthMode
+				existing.AgentID = asset.AgentID
+				existing.Confidence = asset.Confidence
+				existing.RiskLevel = asset.RiskLevel
+				existing.Status = models.AssetStatusActive
+				existing.ProbeDetails = asset.ProbeDetails
+				existing.Metadata = asset.Metadata
+				if err := tx.Save(&existing).Error; err != nil {
+					return err
+				}
+				asset.ID = existing.ID
+				return nil
+			case errors.Is(err, gorm.ErrRecordNotFound):
+				return tx.Create(asset).Error
+			default:
+				return err
+			}
+		})
 	})
 }
 
@@ -231,7 +286,9 @@ func (s *gormStore) ListAssets(ctx context.Context, filter AssetFilter) ([]model
 // ---------- Vulnerabilities ----------
 
 func (s *gormStore) CreateVulnerability(ctx context.Context, vuln *models.Vulnerability) error {
-	return s.db.WithContext(ctx).Create(vuln).Error
+	return s.withWriteSession(ctx, func(db *gorm.DB) error {
+		return db.Create(vuln).Error
+	})
 }
 
 func (s *gormStore) GetVulnerability(ctx context.Context, id string) (*models.Vulnerability, error) {
@@ -253,8 +310,17 @@ func (s *gormStore) ListVulnerabilities(ctx context.Context, filter VulnFilter) 
 	if filter.Severity != nil {
 		q = q.Where("severity = ?", *filter.Severity)
 	}
-	if filter.CVEID != "" {
-		q = q.Where("cve_id = ?", filter.CVEID)
+	if filter.Identifier != "" {
+		switch filter.IdentifierType {
+		case "cve":
+			q = q.Where("cve_id = ?", filter.Identifier)
+		case "cnnvd":
+			q = q.Where("cnnvd_id = ?", filter.Identifier)
+		case "ghsa":
+			q = q.Where("ghsa_id = ?", filter.Identifier)
+		default:
+			q = q.Where("cve_id = ? OR cnnvd_id = ? OR ghsa_id = ?", filter.Identifier, filter.Identifier, filter.Identifier)
+		}
 	}
 	if filter.CheckType != "" {
 		q = q.Where("check_type = ?", filter.CheckType)
@@ -288,7 +354,9 @@ func (s *gormStore) ListVulnsByAsset(ctx context.Context, assetID string) ([]mod
 // ---------- Scan Results ----------
 
 func (s *gormStore) CreateScanResult(ctx context.Context, result *models.ScanResult) error {
-	return s.db.WithContext(ctx).Create(result).Error
+	return s.withWriteSession(ctx, func(db *gorm.DB) error {
+		return db.Create(result).Error
+	})
 }
 
 func (s *gormStore) ListScanResults(ctx context.Context, taskID string) ([]models.ScanResult, error) {
@@ -308,7 +376,9 @@ func (s *gormStore) GetUserByUsername(ctx context.Context, username string) (*mo
 }
 
 func (s *gormStore) CreateUser(ctx context.Context, user *models.User) error {
-	return s.db.WithContext(ctx).Create(user).Error
+	return s.withWriteSession(ctx, func(db *gorm.DB) error {
+		return db.Create(user).Error
+	})
 }
 
 // ---------- Alert Rules ----------
@@ -320,21 +390,25 @@ func (s *gormStore) ListAlertRules(ctx context.Context) ([]models.AlertRule, err
 }
 
 func (s *gormStore) SaveAlertRules(ctx context.Context, rules []models.AlertRule) error {
-	return s.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
-		if err := tx.Where("1 = 1").Delete(&models.AlertRule{}).Error; err != nil {
-			return err
-		}
-		if len(rules) == 0 {
-			return nil
-		}
-		return tx.Create(&rules).Error
+	return s.withWriteSession(ctx, func(db *gorm.DB) error {
+		return db.Transaction(func(tx *gorm.DB) error {
+			if err := tx.Where("1 = 1").Delete(&models.AlertRule{}).Error; err != nil {
+				return err
+			}
+			if len(rules) == 0 {
+				return nil
+			}
+			return tx.Create(&rules).Error
+		})
 	})
 }
 
 // ---------- Alert Records ----------
 
 func (s *gormStore) CreateAlertRecord(ctx context.Context, record *models.AlertRecord) error {
-	return s.db.WithContext(ctx).Create(record).Error
+	return s.withWriteSession(ctx, func(db *gorm.DB) error {
+		return db.Create(record).Error
+	})
 }
 
 func (s *gormStore) ListAlertRecords(ctx context.Context, limit int) ([]models.AlertRecord, error) {
@@ -344,6 +418,42 @@ func (s *gormStore) ListAlertRecords(ctx context.Context, limit int) ([]models.A
 	var records []models.AlertRecord
 	err := s.db.WithContext(ctx).Order("created_at DESC").Limit(limit).Find(&records).Error
 	return records, err
+}
+
+func (s *gormStore) withWriteSession(ctx context.Context, fn func(db *gorm.DB) error) error {
+	if s.isSQLite {
+		s.writeMu.Lock()
+		defer s.writeMu.Unlock()
+	}
+
+	db := s.db.WithContext(ctx)
+	attempts := 1
+	if s.isSQLite {
+		attempts = 5
+	}
+
+	var err error
+	for attempt := 1; attempt <= attempts; attempt++ {
+		err = fn(db)
+		if !isSQLiteBusyError(err) || attempt == attempts {
+			return err
+		}
+		time.Sleep(time.Duration(attempt) * 100 * time.Millisecond)
+	}
+	return err
+}
+
+func isSQLiteBusyError(err error) bool {
+	if err == nil {
+		return false
+	}
+	msg := strings.ToLower(err.Error())
+	return strings.Contains(msg, "database is locked") || strings.Contains(msg, "database table is locked") || strings.Contains(msg, "database is busy")
+}
+
+func isInMemorySQLite(dsn string) bool {
+	normalized := strings.ToLower(strings.TrimSpace(dsn))
+	return normalized == ":memory:" || strings.Contains(normalized, "mode=memory")
 }
 
 // ---------- Dashboard ----------

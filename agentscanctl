@@ -48,7 +48,7 @@ Main commands:
 
 Database commands:
   backup-db    Backup the configured SQLite database to _data/backups
-  cleanup-db   Backup DB, remove orphan rows, restart if it was running
+  cleanup-db   Backup DB, remove orphan rows only, restart if it was running
   reset-db     Backup DB, clear DB files, restart if it was running
 
 Aliases:
@@ -118,6 +118,67 @@ require_cmd() {
 is_running() {
   local pid="$1"
   [[ -n "$pid" ]] && kill -0 "$pid" 2>/dev/null
+}
+
+managed_command() {
+  printf '%s server --config %s\n' "$BIN_FILE" "$CONFIG_FILE"
+}
+
+pid_command() {
+  local pid="$1"
+  ps -p "$pid" -o args= 2>/dev/null | head -n 1
+}
+
+is_managed_pid() {
+  local pid="$1"
+  [[ -n "$pid" ]] || return 1
+  is_running "$pid" || return 1
+  [[ "$(pid_command "$pid")" == "$(managed_command)" ]]
+}
+
+find_managed_pids() {
+  local target
+  target="$(managed_command)"
+  ps -eo pid=,args= 2>/dev/null | awk -v target="$target" '
+    {
+      pid = $1
+      $1 = ""
+      sub(/^[[:space:]]+/, "", $0)
+      if ($0 == target) {
+        print pid
+      }
+    }
+  '
+}
+
+first_managed_pid() {
+  find_managed_pids | head -n 1
+}
+
+sync_pid_file() {
+  ensure_paths
+
+  local pid_file_pid managed_pid
+  pid_file_pid=""
+  if [[ -f "$PID_FILE" ]]; then
+    pid_file_pid="$(cat "$PID_FILE" 2>/dev/null || true)"
+  fi
+
+  if is_managed_pid "$pid_file_pid"; then
+    return 0
+  fi
+
+  managed_pid="$(first_managed_pid)"
+  if [[ -n "$managed_pid" ]]; then
+    echo "$managed_pid" > "$PID_FILE"
+    return 0
+  fi
+
+  if [[ -f "$PID_FILE" ]]; then
+    rm -f "$PID_FILE"
+  fi
+
+  return 1
 }
 
 port_listener() {
@@ -235,17 +296,33 @@ EOF
 show_status() {
   load_runtime_values
 
+  local pid_file_pid managed_pid repaired=0
+  pid_file_pid=""
   if [[ -f "$PID_FILE" ]]; then
-    PID="$(cat "$PID_FILE" 2>/dev/null || true)"
-    if [[ -n "$PID" ]] && is_running "$PID"; then
-      echo "Status: running"
-      echo "PID: $PID"
-      echo "URL: http://$DISPLAY_HOST:$PORT/"
-      echo "Log: $LOG_FILE"
-    else
-      echo "Status: stale pid file"
-      echo "PID file: $PID_FILE"
+    pid_file_pid="$(cat "$PID_FILE" 2>/dev/null || true)"
+  fi
+
+  if is_managed_pid "$pid_file_pid"; then
+    managed_pid="$pid_file_pid"
+  else
+    managed_pid="$(first_managed_pid)"
+    if [[ -n "$managed_pid" ]]; then
+      repaired=1
+      echo "$managed_pid" > "$PID_FILE"
     fi
+  fi
+
+  if [[ -n "${managed_pid:-}" ]]; then
+    echo "Status: running"
+    echo "PID: $managed_pid"
+    echo "URL: http://$DISPLAY_HOST:$PORT/"
+    echo "Log: $LOG_FILE"
+    if [[ "$repaired" == "1" ]]; then
+      echo "PID file repaired: $PID_FILE"
+    fi
+  elif [[ -n "$pid_file_pid" ]]; then
+    echo "Status: stale pid file"
+    echo "PID file: $PID_FILE"
   else
     echo "Status: not running"
   fi
@@ -290,15 +367,12 @@ doctor() {
 start_service() {
   build_all
 
-  if [[ -f "$PID_FILE" ]]; then
+  if sync_pid_file; then
     CURRENT_PID="$(cat "$PID_FILE" 2>/dev/null || true)"
-    if is_running "$CURRENT_PID"; then
-      echo "GateScope is already running."
-      echo "PID: $CURRENT_PID"
-      echo "URL: http://$DISPLAY_HOST:$PORT/"
-      return 0
-    fi
-    rm -f "$PID_FILE"
+    echo "GateScope is already running."
+    echo "PID: $CURRENT_PID"
+    echo "URL: http://$DISPLAY_HOST:$PORT/"
+    return 0
   fi
 
   PORT_IN_USE="$(port_listener "$PORT")"
@@ -336,27 +410,34 @@ start_service() {
 stop_service() {
   load_runtime_values
 
-  if [[ ! -f "$PID_FILE" ]]; then
+  local pid_file_pid
+  pid_file_pid=""
+  if [[ -f "$PID_FILE" ]]; then
+    pid_file_pid="$(cat "$PID_FILE" 2>/dev/null || true)"
+  fi
+
+  mapfile -t MANAGED_PIDS < <(find_managed_pids)
+  if [[ "${#MANAGED_PIDS[@]}" -eq 0 ]]; then
+    if [[ -f "$PID_FILE" ]]; then
+      rm -f "$PID_FILE"
+      if [[ -z "$pid_file_pid" ]]; then
+        echo "PID file was empty and has been removed."
+      else
+        echo "Process $pid_file_pid is not the managed GateScope server. Removed stale PID file."
+      fi
+      return 0
+    fi
     echo "No managed GateScope process found."
     return 0
   fi
 
-  PID="$(cat "$PID_FILE" 2>/dev/null || true)"
-  if [[ -z "$PID" ]]; then
-    rm -f "$PID_FILE"
-    echo "PID file was empty and has been removed."
-    return 0
-  fi
+  for PID in "${MANAGED_PIDS[@]}"; do
+    kill "$PID"
+  done
 
-  if ! is_running "$PID"; then
-    rm -f "$PID_FILE"
-    echo "Process $PID is not running. Removed stale PID file."
-    return 0
-  fi
-
-  kill "$PID"
   for _ in $(seq 1 20); do
-    if ! is_running "$PID"; then
+    mapfile -t REMAINING_PIDS < <(find_managed_pids)
+    if [[ "${#REMAINING_PIDS[@]}" -eq 0 ]]; then
       rm -f "$PID_FILE"
       echo "GateScope stopped."
       return 0
@@ -364,7 +445,7 @@ stop_service() {
     sleep 1
   done
 
-  echo "Process $PID did not exit within 20 seconds. No force kill was used."
+  echo "Managed GateScope processes did not exit within 20 seconds. No force kill was used."
   return 1
 }
 
@@ -414,13 +495,9 @@ reset_db() {
   fi
 
   local was_running=0
-  if [[ -f "$PID_FILE" ]]; then
-    local current_pid
-    current_pid="$(cat "$PID_FILE" 2>/dev/null || true)"
-    if is_running "$current_pid"; then
-      was_running=1
-      stop_service
-    fi
+  if sync_pid_file; then
+    was_running=1
+    stop_service
   fi
 
   backup_db
@@ -443,13 +520,9 @@ cleanup_db() {
   fi
 
   local was_running=0
-  if [[ -f "$PID_FILE" ]]; then
-    local current_pid
-    current_pid="$(cat "$PID_FILE" 2>/dev/null || true)"
-    if is_running "$current_pid"; then
-      was_running=1
-      stop_service
-    fi
+  if sync_pid_file; then
+    was_running=1
+    stop_service
   fi
 
   backup_db
@@ -467,6 +540,7 @@ for table in ("vulnerabilities", "assets", "scan_results"):
 conn.close()
 PY
   echo "Database orphan cleanup complete: $DB_PATH"
+  echo "cleanup-db only removes orphan rows; use reset-db to fully clear the SQLite database."
 
   if [[ "$was_running" == "1" ]]; then
     start_service

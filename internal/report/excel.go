@@ -112,7 +112,7 @@ func GenerateExcel(data ExcelReportData) (*excelize.File, error) {
 		summaryData = append(summaryData, []string{"漏洞库上游截止", data.RuleCatalog.SourceCutoff})
 	}
 	if data.RuleCatalog.CVECount > 0 || data.RuleCatalog.PoCCount > 0 {
-		summaryData = append(summaryData, []string{"规则库规模", fmt.Sprintf("CVE %d / PoC %d", data.RuleCatalog.CVECount, data.RuleCatalog.PoCCount)})
+		summaryData = append(summaryData, []string{"规则库规模", fmt.Sprintf("规则 %d / CVE %d / CNNVD %d / GHSA %d / PoC %d", data.RuleCatalog.RuleCount, data.RuleCatalog.CVECount, data.RuleCatalog.CNNVDCount, data.RuleCatalog.GHSACount, data.RuleCatalog.PoCCount)})
 	}
 	for i, row := range summaryData {
 		r := i + 4
@@ -210,7 +210,7 @@ func GenerateExcel(data ExcelReportData) (*excelize.File, error) {
 	// ===== Vulnerabilities Sheet =====
 	vulnSheet := "漏洞详情"
 	f.NewSheet(vulnSheet)
-	vulnHeaders := []string{"IP", "端口", "Agent类型", "资产定位", "CVE编号", "标题", "严重等级", "CVSS", "判定依据", "描述", "修复建议", "证据", "检测时间"}
+	vulnHeaders := []string{"IP", "端口", "Agent类型", "资产定位", "CVE编号", "CNNVD编号", "GHSA编号", "标题", "严重等级", "CVSS", "判定依据", "中文描述", "英文描述", "修复建议", "证据", "检测时间"}
 	for i, h := range vulnHeaders {
 		cell := colName(i) + "1"
 		f.SetCellValue(vulnSheet, cell, h)
@@ -224,40 +224,44 @@ func GenerateExcel(data ExcelReportData) (*excelize.File, error) {
 		f.SetCellValue(vulnSheet, fmt.Sprintf("C%d", r), asset.AgentType)
 		f.SetCellValue(vulnSheet, fmt.Sprintf("D%d", r), formatAssetLabel(asset, v.AssetID))
 		f.SetCellValue(vulnSheet, fmt.Sprintf("E%d", r), v.CVEID)
-		f.SetCellValue(vulnSheet, fmt.Sprintf("F%d", r), v.Title)
-		f.SetCellValue(vulnSheet, fmt.Sprintf("G%d", r), string(v.Severity))
-		sevCell := fmt.Sprintf("G%d", r)
+		f.SetCellValue(vulnSheet, fmt.Sprintf("F%d", r), v.CNNVDID)
+		f.SetCellValue(vulnSheet, fmt.Sprintf("G%d", r), v.GHSAID)
+		f.SetCellValue(vulnSheet, fmt.Sprintf("H%d", r), v.Title)
+		f.SetCellValue(vulnSheet, fmt.Sprintf("I%d", r), string(v.Severity))
+		sevCell := fmt.Sprintf("I%d", r)
 		if st, ok := riskStyleMap[string(v.Severity)]; ok {
 			f.SetCellStyle(vulnSheet, sevCell, sevCell, st)
 		}
-		f.SetCellValue(vulnSheet, fmt.Sprintf("H%d", r), v.CVSS)
+		f.SetCellValue(vulnSheet, fmt.Sprintf("J%d", r), v.CVSS)
 		ctLabel := checkLabels[v.CheckType]
 		if ctLabel == "" {
 			ctLabel = v.CheckType
 		}
-		f.SetCellValue(vulnSheet, fmt.Sprintf("I%d", r), ctLabel)
-		f.SetCellValue(vulnSheet, fmt.Sprintf("J%d", r), v.Description)
-		f.SetCellStyle(vulnSheet, fmt.Sprintf("J%d", r), fmt.Sprintf("J%d", r), wrapStyle)
-		f.SetCellValue(vulnSheet, fmt.Sprintf("K%d", r), v.Remediation)
-		f.SetCellStyle(vulnSheet, fmt.Sprintf("K%d", r), fmt.Sprintf("K%d", r), wrapStyle)
-		f.SetCellValue(vulnSheet, fmt.Sprintf("L%d", r), v.Evidence)
+		f.SetCellValue(vulnSheet, fmt.Sprintf("K%d", r), ctLabel)
+		f.SetCellValue(vulnSheet, fmt.Sprintf("L%d", r), v.DescriptionZH)
 		f.SetCellStyle(vulnSheet, fmt.Sprintf("L%d", r), fmt.Sprintf("L%d", r), wrapStyle)
-		f.SetCellValue(vulnSheet, fmt.Sprintf("M%d", r), formatTime(v.DetectedAt))
+		f.SetCellValue(vulnSheet, fmt.Sprintf("M%d", r), v.Description)
+		f.SetCellStyle(vulnSheet, fmt.Sprintf("M%d", r), fmt.Sprintf("M%d", r), wrapStyle)
+		f.SetCellValue(vulnSheet, fmt.Sprintf("N%d", r), v.Remediation)
+		f.SetCellStyle(vulnSheet, fmt.Sprintf("N%d", r), fmt.Sprintf("N%d", r), wrapStyle)
+		f.SetCellValue(vulnSheet, fmt.Sprintf("O%d", r), v.Evidence)
+		f.SetCellStyle(vulnSheet, fmt.Sprintf("O%d", r), fmt.Sprintf("O%d", r), wrapStyle)
+		f.SetCellValue(vulnSheet, fmt.Sprintf("P%d", r), formatTime(v.DetectedAt))
 	}
 	f.SetColWidth(vulnSheet, "A", "A", 18)
 	f.SetColWidth(vulnSheet, "B", "B", 10)
 	f.SetColWidth(vulnSheet, "C", "D", 18)
-	f.SetColWidth(vulnSheet, "E", "E", 16)
-	f.SetColWidth(vulnSheet, "F", "F", 35)
-	f.SetColWidth(vulnSheet, "G", "I", 14)
-	f.SetColWidth(vulnSheet, "J", "K", 40)
-	f.SetColWidth(vulnSheet, "L", "L", 60)
-	f.SetColWidth(vulnSheet, "M", "M", 16)
+	f.SetColWidth(vulnSheet, "E", "G", 18)
+	f.SetColWidth(vulnSheet, "H", "H", 35)
+	f.SetColWidth(vulnSheet, "I", "K", 14)
+	f.SetColWidth(vulnSheet, "L", "N", 40)
+	f.SetColWidth(vulnSheet, "O", "O", 60)
+	f.SetColWidth(vulnSheet, "P", "P", 16)
 
 	// ===== Remediation Sheet =====
 	remSheet := "修复清单"
 	f.NewSheet(remSheet)
-	remHeaders := []string{"优先级", "IP", "端口", "Agent类型", "CVE编号", "漏洞标题", "严重等级", "CVSS", "修复建议", "影响资产"}
+	remHeaders := []string{"优先级", "IP", "端口", "Agent类型", "CVE编号", "CNNVD编号", "GHSA编号", "漏洞标题", "严重等级", "CVSS", "修复建议", "影响资产"}
 	for i, h := range remHeaders {
 		cell := colName(i) + "1"
 		f.SetCellValue(remSheet, cell, h)
@@ -277,26 +281,28 @@ func GenerateExcel(data ExcelReportData) (*excelize.File, error) {
 			f.SetCellValue(remSheet, fmt.Sprintf("C%d", r), asset.Port)
 			f.SetCellValue(remSheet, fmt.Sprintf("D%d", r), asset.AgentType)
 			f.SetCellValue(remSheet, fmt.Sprintf("E%d", r), v.CVEID)
-			f.SetCellValue(remSheet, fmt.Sprintf("F%d", r), v.Title)
-			f.SetCellValue(remSheet, fmt.Sprintf("G%d", r), string(v.Severity))
+			f.SetCellValue(remSheet, fmt.Sprintf("F%d", r), v.CNNVDID)
+			f.SetCellValue(remSheet, fmt.Sprintf("G%d", r), v.GHSAID)
+			f.SetCellValue(remSheet, fmt.Sprintf("H%d", r), v.Title)
+			f.SetCellValue(remSheet, fmt.Sprintf("I%d", r), string(v.Severity))
 			if st, ok := riskStyleMap[string(v.Severity)]; ok {
-				f.SetCellStyle(remSheet, fmt.Sprintf("G%d", r), fmt.Sprintf("G%d", r), st)
+				f.SetCellStyle(remSheet, fmt.Sprintf("I%d", r), fmt.Sprintf("I%d", r), st)
 			}
-			f.SetCellValue(remSheet, fmt.Sprintf("H%d", r), v.CVSS)
-			f.SetCellValue(remSheet, fmt.Sprintf("I%d", r), v.Remediation)
-			f.SetCellStyle(remSheet, fmt.Sprintf("I%d", r), fmt.Sprintf("I%d", r), wrapStyle)
-			f.SetCellValue(remSheet, fmt.Sprintf("J%d", r), formatAssetLabel(asset, v.AssetID))
+			f.SetCellValue(remSheet, fmt.Sprintf("J%d", r), v.CVSS)
+			f.SetCellValue(remSheet, fmt.Sprintf("K%d", r), v.Remediation)
+			f.SetCellStyle(remSheet, fmt.Sprintf("K%d", r), fmt.Sprintf("K%d", r), wrapStyle)
+			f.SetCellValue(remSheet, fmt.Sprintf("L%d", r), formatAssetLabel(asset, v.AssetID))
 			priority++
 		}
 	}
 	f.SetColWidth(remSheet, "A", "A", 8)
 	f.SetColWidth(remSheet, "B", "B", 18)
 	f.SetColWidth(remSheet, "C", "C", 10)
-	f.SetColWidth(remSheet, "D", "E", 16)
-	f.SetColWidth(remSheet, "F", "F", 35)
-	f.SetColWidth(remSheet, "G", "H", 12)
-	f.SetColWidth(remSheet, "I", "I", 45)
-	f.SetColWidth(remSheet, "J", "J", 28)
+	f.SetColWidth(remSheet, "D", "G", 18)
+	f.SetColWidth(remSheet, "H", "H", 35)
+	f.SetColWidth(remSheet, "I", "J", 12)
+	f.SetColWidth(remSheet, "K", "K", 45)
+	f.SetColWidth(remSheet, "L", "L", 28)
 
 	return f, nil
 }

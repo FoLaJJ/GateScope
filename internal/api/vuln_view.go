@@ -5,6 +5,7 @@ import (
 	"fmt"
 
 	"github.com/AutoScan/agentscan/internal/models"
+	"github.com/AutoScan/agentscan/internal/scanner/l3"
 	"github.com/AutoScan/agentscan/internal/store"
 )
 
@@ -29,6 +30,7 @@ func (s *Server) hydrateVulnerabilityViews(ctx context.Context, vulns []models.V
 	missing := make(map[string]struct{})
 
 	for _, vuln := range vulns {
+		vuln = l3.LocalizeVulnerability(vuln)
 		view := vulnerabilityView{Vulnerability: vuln}
 		if vuln.AssetID != "" {
 			asset, ok := assetCache[vuln.AssetID]
@@ -94,6 +96,7 @@ func (s *Server) synthesizeTaskAssetContext(ctx context.Context, taskID string, 
 
 	views := make([]vulnerabilityView, 0, len(vulns))
 	for _, vuln := range vulns {
+		vuln = l3.LocalizeVulnerability(vuln)
 		view := vulnerabilityView{Vulnerability: vuln}
 		if asset, ok := assetByID[vuln.AssetID]; ok {
 			view.AssetIP = asset.IP

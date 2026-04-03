@@ -4,6 +4,7 @@ import (
 	"errors"
 	"os"
 	"path/filepath"
+	"runtime"
 	"strings"
 	"sync"
 
@@ -13,6 +14,7 @@ import (
 type maliciousSkillRule struct {
 	Pattern  string `yaml:"pattern"`
 	Reason   string `yaml:"reason"`
+	ReasonZH string `yaml:"reason_zh"`
 	Severity string `yaml:"severity"`
 }
 
@@ -20,6 +22,8 @@ type PoCRule struct {
 	ID          string  `yaml:"id"`
 	Name        string  `yaml:"name"`
 	CVEID       string  `yaml:"cve_id"`
+	CNNVDID     string  `yaml:"cnnvd_id"`
+	GHSAID      string  `yaml:"ghsa_id"`
 	Severity    string  `yaml:"severity"`
 	CVSS        float64 `yaml:"cvss"`
 	Remediation string  `yaml:"remediation"`
@@ -38,6 +42,17 @@ type cveRulesFile struct {
 	CVEs []CVEEntry `yaml:"cves"`
 }
 
+type ruleIDMapping struct {
+	RuleID  string `yaml:"rule_id"`
+	CVEID   string `yaml:"cve_id"`
+	CNNVDID string `yaml:"cnnvd_id"`
+	GHSAID  string `yaml:"ghsa_id"`
+}
+
+type idMappingsFile struct {
+	Mappings []ruleIDMapping `yaml:"mappings"`
+}
+
 type skillRulesFile struct {
 	KnownMalicious       []maliciousSkillRule `yaml:"known_malicious"`
 	SuspiciousIndicators []string             `yaml:"suspicious_indicators"`
@@ -45,25 +60,6 @@ type skillRulesFile struct {
 
 type pocRulesFile struct {
 	PoCs []PoCRule `yaml:"pocs"`
-}
-
-var defaultKnownMaliciousSkillRules = []maliciousSkillRule{
-	{Pattern: "@evilcorp/data-exfil", Reason: "Known data exfiltration skill", Severity: "critical"},
-	{Pattern: "@malware/cryptominer", Reason: "Cryptocurrency mining skill", Severity: "critical"},
-	{Pattern: "@ghostsocks/proxy", Reason: "GhostSocks C2 proxy skill", Severity: "critical"},
-	{Pattern: "@backdoor/reverse-shell", Reason: "Reverse shell backdoor", Severity: "critical"},
-	{Pattern: "@fake-official/admin", Reason: "Impersonating official admin skill", Severity: "critical"},
-	{Pattern: "openclaw-skill-stealer", Reason: "Credential stealing skill", Severity: "critical"},
-	{Pattern: "skill-inject-rce", Reason: "Remote code execution via skill injection", Severity: "critical"},
-}
-
-var defaultSuspiciousIndicators = []string{"exec", "shell", "cmd", "eval", "system", "reverse", "backdoor", "inject", "exploit"}
-
-var defaultPoCRules = []PoCRule{
-	{ID: "ws_origin_bypass", Name: "WebSocket Origin Bypass", CVEID: "CVE-2026-25253", Severity: "high", CVSS: 8.8, Remediation: "Upgrade to >= 2026.2.25 or enforce Origin header validation"},
-	{ID: "path_traversal", Name: "Path Traversal via Skill Paths", CVEID: "CVE-2026-26972", Severity: "high", CVSS: 7.5, Remediation: "Upgrade to >= 2026.3.2"},
-	{ID: "ssrf_proxy", Name: "SSRF via Agent Request Proxy", CVEID: "CVE-2026-22234", Severity: "high", CVSS: 7.5, Remediation: "Upgrade to >= 2026.2.14"},
-	{ID: "unauth_api", Name: "Unauthenticated API Access", CVEID: "", Severity: "high", CVSS: 8.0, Remediation: "Configure authentication (token_auth or device_auth) for all API endpoints"},
 }
 
 var (
@@ -82,7 +78,10 @@ type RuleCatalogMetadata struct {
 	SourceCutoff string   `json:"source_cutoff"`
 	Source       string   `json:"source"`
 	Notes        string   `json:"notes"`
+	RuleCount    int      `json:"rule_count"`
 	CVECount     int      `json:"cve_count"`
+	CNNVDCount   int      `json:"cnnvd_count"`
+	GHSACount    int      `json:"ghsa_count"`
 	PoCCount     int      `json:"poc_count"`
 	Consistent   bool     `json:"consistent"`
 	Issues       []string `json:"issues"`
@@ -121,7 +120,10 @@ func GetRuleCatalogMetadata() RuleCatalogMetadata {
 		SourceCutoff: loadedRulesMeta.SourceCutoff,
 		Source:       loadedRulesMeta.Source,
 		Notes:        loadedRulesMeta.Notes,
-		CVECount:     len(loadedOpenClawCVEs),
+		RuleCount:    len(loadedOpenClawCVEs),
+		CVECount:     countRulesWith(func(rule CVEEntry) bool { return strings.TrimSpace(rule.CVEID) != "" }),
+		CNNVDCount:   countRulesWith(func(rule CVEEntry) bool { return strings.TrimSpace(rule.CNNVDID) != "" }),
+		GHSACount:    countRulesWith(func(rule CVEEntry) bool { return strings.TrimSpace(rule.GHSAID) != "" }),
 		PoCCount:     len(loadedPoCRules),
 		Consistent:   len(issues) == 0,
 		Issues:       issues,
@@ -150,10 +152,10 @@ func hasPoCForCVE(cveID string) bool {
 }
 
 func loadRules() {
-	loadedOpenClawCVEs = append([]CVEEntry(nil), defaultOpenClawCVEs...)
-	loadedMaliciousSkillRules = append([]maliciousSkillRule(nil), defaultKnownMaliciousSkillRules...)
-	loadedSuspiciousIndicators = append([]string(nil), defaultSuspiciousIndicators...)
-	loadedPoCRules = append([]PoCRule(nil), defaultPoCRules...)
+	loadedOpenClawCVEs = nil
+	loadedMaliciousSkillRules = nil
+	loadedSuspiciousIndicators = nil
+	loadedPoCRules = nil
 	loadedRulesMeta = rulesMeta{}
 	loadedRuleIssues = nil
 
@@ -161,7 +163,12 @@ func loadRules() {
 	if err := readRulesFile("openclaw-cves.yaml", &cveFile); err == nil && len(cveFile.CVEs) > 0 {
 		loadedOpenClawCVEs = cveFile.CVEs
 		loadedRulesMeta = cveFile.Meta
+	} else {
+		loadedRuleIssues = append(loadedRuleIssues, "missing or empty rule file openclaw-cves.yaml")
 	}
+	normalizeOpenClawCVEs()
+	applyIDMappings()
+	ensureRuleChineseDescriptions()
 
 	var skillsFile skillRulesFile
 	if err := readRulesFile("skills.yaml", &skillsFile); err == nil {
@@ -171,14 +178,94 @@ func loadRules() {
 		if len(skillsFile.SuspiciousIndicators) > 0 {
 			loadedSuspiciousIndicators = skillsFile.SuspiciousIndicators
 		}
+	} else {
+		loadedRuleIssues = append(loadedRuleIssues, "missing or empty rule file skills.yaml")
 	}
 
 	var pocsFile pocRulesFile
 	if err := readRulesFile("pocs.yaml", &pocsFile); err == nil && len(pocsFile.PoCs) > 0 {
 		loadedPoCRules = pocsFile.PoCs
+	} else {
+		loadedRuleIssues = append(loadedRuleIssues, "missing or empty rule file pocs.yaml")
 	}
 
 	normalizePoCRules()
+	validateRuleIdentifiers()
+}
+
+func applyIDMappings() {
+	var mappingsFile idMappingsFile
+	if err := readRulesFile("openclaw-id-mappings.yaml", &mappingsFile); err != nil {
+		return
+	}
+
+	seenRuleIDs := make(map[string]struct{}, len(mappingsFile.Mappings))
+	for _, mapping := range mappingsFile.Mappings {
+		ruleID := strings.TrimSpace(mapping.RuleID)
+		if ruleID == "" {
+			continue
+		}
+		if _, ok := seenRuleIDs[ruleID]; ok {
+			loadedRuleIssues = append(loadedRuleIssues, "duplicate id mapping for rule "+ruleID)
+			continue
+		}
+		seenRuleIDs[ruleID] = struct{}{}
+
+		applied := false
+		for i := range loadedOpenClawCVEs {
+			rule := &loadedOpenClawCVEs[i]
+			if rule.ID != ruleID {
+				continue
+			}
+			if v := strings.TrimSpace(mapping.CVEID); v != "" {
+				rule.CVEID = v
+			}
+			if v := strings.TrimSpace(mapping.CNNVDID); v != "" {
+				rule.CNNVDID = v
+			}
+			if v := strings.TrimSpace(mapping.GHSAID); v != "" {
+				rule.GHSAID = v
+			}
+			applied = true
+			break
+		}
+
+		if !applied {
+			loadedRuleIssues = append(loadedRuleIssues, "id mapping references missing rule "+ruleID)
+		}
+	}
+}
+
+func validateRuleIdentifiers() {
+	seenRuleIDs := make(map[string]struct{}, len(loadedOpenClawCVEs))
+	seenCVEs := make(map[string]string, len(loadedOpenClawCVEs))
+	seenCNNVDs := make(map[string]string, len(loadedOpenClawCVEs))
+	seenGHSAs := make(map[string]string, len(loadedOpenClawCVEs))
+
+	for _, rule := range loadedOpenClawCVEs {
+		ruleID := strings.TrimSpace(rule.ID)
+		if ruleID != "" {
+			if _, ok := seenRuleIDs[ruleID]; ok {
+				loadedRuleIssues = append(loadedRuleIssues, "duplicate rule id "+ruleID)
+			} else {
+				seenRuleIDs[ruleID] = struct{}{}
+			}
+		}
+		recordIdentifierIssue(seenCVEs, strings.TrimSpace(rule.CVEID), ruleID, "cve_id")
+		recordIdentifierIssue(seenCNNVDs, strings.TrimSpace(rule.CNNVDID), ruleID, "cnnvd_id")
+		recordIdentifierIssue(seenGHSAs, strings.TrimSpace(rule.GHSAID), ruleID, "ghsa_id")
+	}
+}
+
+func recordIdentifierIssue(seen map[string]string, value, ruleID, field string) {
+	if value == "" || ruleID == "" {
+		return
+	}
+	if prevRuleID, ok := seen[value]; ok && prevRuleID != ruleID {
+		loadedRuleIssues = append(loadedRuleIssues, field+" "+value+" is mapped to multiple rules: "+prevRuleID+", "+ruleID)
+		return
+	}
+	seen[value] = ruleID
 }
 
 func normalizePoCRules() {
@@ -196,17 +283,51 @@ func normalizePoCRules() {
 
 		rule.Severity = cve.Severity
 		rule.CVSS = cve.CVSS
+		rule.CNNVDID = cve.CNNVDID
+		rule.GHSAID = cve.GHSAID
 		rule.Remediation = cve.Remediation
+	}
+}
+
+func normalizeOpenClawCVEs() {
+	for i := range loadedOpenClawCVEs {
+		rule := &loadedOpenClawCVEs[i]
+		if rule.CVEID == "" && strings.HasPrefix(rule.ID, "CVE-") {
+			rule.CVEID = rule.ID
+		}
+		if rule.GHSAID == "" && strings.HasPrefix(rule.ID, "GHSA-") {
+			rule.GHSAID = rule.ID
+		}
+		if rule.ID == "" {
+			switch {
+			case rule.CVEID != "":
+				rule.ID = rule.CVEID
+			case rule.GHSAID != "":
+				rule.ID = rule.GHSAID
+			case rule.CNNVDID != "":
+				rule.ID = rule.CNNVDID
+			}
+		}
 	}
 }
 
 func findOpenClawCVE(cveID string) (CVEEntry, bool) {
 	for _, cve := range loadedOpenClawCVEs {
-		if cve.ID == cveID {
+		if cve.ID == cveID || cve.CVEID == cveID {
 			return cve, true
 		}
 	}
 	return CVEEntry{}, false
+}
+
+func countRulesWith(match func(rule CVEEntry) bool) int {
+	count := 0
+	for _, rule := range loadedOpenClawCVEs {
+		if match(rule) {
+			count++
+		}
+	}
+	return count
 }
 
 func readRulesFile(filename string, out any) error {
@@ -243,8 +364,15 @@ func candidateRuleDirs() []string {
 	dirs = append(dirs,
 		filepath.Join(".", "_data", "rules"),
 		filepath.Join(".", "configs", "rules"),
+		filepath.Join("..", "configs", "rules"),
+		filepath.Join("..", "..", "configs", "rules"),
+		filepath.Join("..", "..", "..", "configs", "rules"),
 		filepath.Join(string(filepath.Separator), "etc", "agentscan", "rules"),
 	)
+	if _, file, _, ok := runtime.Caller(0); ok {
+		sourceDir := filepath.Dir(file)
+		dirs = append(dirs, filepath.Join(sourceDir, "..", "..", "..", "configs", "rules"))
+	}
 
 	seen := map[string]struct{}{}
 	unique := make([]string, 0, len(dirs))
@@ -263,4 +391,14 @@ func candidateRuleDirs() []string {
 		unique = append(unique, cleaned)
 	}
 	return unique
+}
+
+func resetLoadedRulesForTests() {
+	rulesOnce = sync.Once{}
+	loadedOpenClawCVEs = nil
+	loadedMaliciousSkillRules = nil
+	loadedSuspiciousIndicators = nil
+	loadedPoCRules = nil
+	loadedRulesMeta = rulesMeta{}
+	loadedRuleIssues = nil
 }

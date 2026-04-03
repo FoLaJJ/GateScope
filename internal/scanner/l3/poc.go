@@ -15,14 +15,17 @@ import (
 )
 
 type PoCResult struct {
-	Name        string
-	CVEID       string
-	Success     bool
-	Severity    string
-	CVSS        float64
-	Description string
-	Evidence    string
-	Remediation string
+	Name          string
+	CVEID         string
+	CNNVDID       string
+	GHSAID        string
+	Success       bool
+	Severity      string
+	CVSS          float64
+	Description   string
+	DescriptionZH string
+	Evidence      string
+	Remediation   string
 }
 
 type pocRunner func(ip string, port int, timeout time.Duration, rule PoCRule) PoCResult
@@ -79,6 +82,7 @@ func pocWSOriginBypass(ip string, port int, timeout time.Duration, rule PoCRule)
 
 	result.Success = true
 	result.Description = fmt.Sprintf("WebSocket connection accepted with malicious Origin '%s' - vulnerable to ClawJacked (cross-site WS hijack)", evilOrigin)
+	result.DescriptionZH = fmt.Sprintf("服务端接受了伪造 Origin（%s）的 WebSocket 连接，存在跨站 WebSocket 劫持风险，可能进一步导致会话接管或远程代码执行。", evilOrigin)
 	result.Evidence = fmt.Sprintf("ws=%s origin=%s http_status=%d", wsURL, evilOrigin, resp.StatusCode)
 
 	conn.SetReadLimit(4096)
@@ -114,6 +118,7 @@ func pocPathTraversal(ip string, port int, timeout time.Duration, rule PoCRule) 
 		if strings.Contains(bodyStr, "root:") || strings.Contains(bodyStr, "/bin/") || strings.Contains(bodyStr, "daemon:") {
 			result.Success = true
 			result.Description = "Path traversal allows reading system files (e.g., /etc/passwd)"
+			result.DescriptionZH = "路径遍历允许读取技能目录之外的系统文件，例如 /etc/passwd。"
 			result.Evidence = fmt.Sprintf("url=%s status=%d body_preview=%s", url, resp.StatusCode, bodyStr)
 			return result
 		}
@@ -121,6 +126,7 @@ func pocPathTraversal(ip string, port int, timeout time.Duration, rule PoCRule) 
 		if resp.StatusCode == 200 && len(body) > 0 && !isJSON(body) && !isHTML(bodyStr) {
 			result.Success = true
 			result.Description = "Path traversal returned unexpected content from outside skills directory"
+			result.DescriptionZH = "路径遍历请求返回了技能目录之外的异常内容，说明存在越权文件访问。"
 			result.Evidence = fmt.Sprintf("url=%s status=%d body_preview=%s", url, resp.StatusCode, bodyStr)
 			return result
 		}
@@ -157,6 +163,7 @@ func pocSSRF(ip string, port int, timeout time.Duration, rule PoCRule) PoCResult
 		if resp.StatusCode == 200 && (strings.Contains(bodyStr, "ami-id") || strings.Contains(bodyStr, "instance-id") || strings.Contains(bodyStr, "iam/") || strings.Contains(bodyStr, "security-credentials")) {
 			result.Success = true
 			result.Description = "SSRF allows accessing cloud metadata endpoint (AWS/GCP/Azure)"
+			result.DescriptionZH = "服务端请求伪造可访问云平台元数据接口，说明攻击者能够借此探测或读取内网敏感资源。"
 			result.Evidence = fmt.Sprintf("url=%s status=%d body=%s", url, resp.StatusCode, bodyStr)
 			return result
 		}
@@ -179,6 +186,7 @@ func pocSSRF(ip string, port int, timeout time.Duration, rule PoCRule) PoCResult
 		if resp.StatusCode == 200 && (strings.Contains(bodyStr, "ami-id") || strings.Contains(bodyStr, "instance-id")) {
 			result.Success = true
 			result.Description = "SSRF via POST proxy allows accessing cloud metadata"
+			result.DescriptionZH = "通过 POST 代理接口可访问云平台元数据接口，说明存在 SSRF 风险。"
 			result.Evidence = fmt.Sprintf("url=%s status=%d body=%s", url, resp.StatusCode, bodyStr)
 			return result
 		}
@@ -223,6 +231,7 @@ func pocUnauthAPI(ip string, port int, timeout time.Duration, rule PoCRule) PoCR
 	if len(accessible) > 0 {
 		result.Success = true
 		result.Description = fmt.Sprintf("%d sensitive endpoint(s) accessible without authentication", len(accessible))
+		result.DescriptionZH = fmt.Sprintf("检测到 %d 个敏感接口可在未认证情况下直接访问。", len(accessible))
 		result.Evidence = "accessible: " + strings.Join(accessible, "; ")
 	} else {
 		result.Description = "All sensitive endpoints require authentication (good)"
@@ -236,6 +245,8 @@ func newPoCResult(rule PoCRule) PoCResult {
 	return PoCResult{
 		Name:        rule.Name,
 		CVEID:       rule.CVEID,
+		CNNVDID:     rule.CNNVDID,
+		GHSAID:      rule.GHSAID,
 		Severity:    rule.Severity,
 		CVSS:        rule.CVSS,
 		Remediation: rule.Remediation,

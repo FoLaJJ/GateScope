@@ -2,7 +2,7 @@ import { useMemo } from 'react'
 import { useParams, Link } from 'react-router-dom'
 import { Card, Descriptions, Tag, Progress, Table, Button, Space, Typography, Tabs, Spin, Timeline, Alert } from 'antd'
 import { ArrowLeftOutlined, DownloadOutlined, ReloadOutlined } from '@ant-design/icons'
-import { useTask, useTaskEvents } from '@/api/tasks'
+import { useTask, useTaskEvents, useTaskTargets } from '@/api/tasks'
 import { useAssetList } from '@/api/assets'
 import { useVulnList } from '@/api/vulns'
 import { useRuleCatalog } from '@/api/rules'
@@ -12,23 +12,25 @@ import RiskTag from '@/components/RiskTag'
 import AuthTag from '@/components/AuthTag'
 import StatCards from '@/components/StatCards'
 import { CHECK_TYPE_LABELS } from '@/constants/check'
-import { extractVersionContext } from '@/utils/vuln'
-import type { Asset, Vulnerability } from '@/types'
+import { extractVersionContext, listVulnerabilityIdentifiers } from '@/utils/vuln'
+import type { Asset, TaskTargetStatus, Vulnerability } from '@/types'
 
 export default function TaskDetail() {
   const { id } = useParams<{ id: string }>()
 
   const { data: task, isLoading, refetch } = useTask(id!)
   const { data: eventsData } = useTaskEvents(id!, 1000)
+  const { data: targetsData } = useTaskTargets(id!)
   const { data: assetsData } = useAssetList(id ? { task_id: id, limit: 1000 } : undefined)
   const { data: vulnsData } = useVulnList(id ? { task_id: id, limit: 1000 } : undefined)
   const { data: ruleCatalog } = useRuleCatalog()
 
   const events = eventsData?.data ?? []
+  const targetStatuses = targetsData?.data ?? []
   const assets = assetsData?.data ?? []
   const vulns = vulnsData?.data ?? []
   const eventTotal = eventsData?.total ?? events.length
-  const assetTotal = assetsData?.total ?? assets.length
+  const assetTotal = targetsData?.total ?? assetsData?.total ?? assets.length
   const vulnTotal = vulnsData?.total ?? vulns.length
 
   const vulnsByAssetId = useMemo(() => {
@@ -45,46 +47,112 @@ export default function TaskDetail() {
   if (isLoading) return <Spin size="large" style={{ display: 'block', margin: '100px auto' }} />
   if (!task) return <Typography.Text>任务未找到</Typography.Text>
 
-  const assetColumns = [
-    { title: 'IP', dataIndex: 'ip', key: 'ip', width: 130 },
-    { title: '端口', dataIndex: 'port', key: 'port', width: 70 },
+  const renderIdentifiers = (record: Vulnerability) => {
+    const identifiers = listVulnerabilityIdentifiers(record)
+    if (identifiers.length === 0) {
+      return '-'
+    }
+
+    return (
+      <Space size={[4, 4]} wrap>
+        {identifiers.map((identifier) => (
+          <Tag color="geekblue" key={identifier.key}>
+            <a href={identifier.href} target="_blank" rel="noreferrer">
+              {identifier.label}
+            </a>
+          </Tag>
+        ))}
+      </Space>
+    )
+  }
+  const mappingStatusText =
+    ruleCatalog?.cnnvd_count && ruleCatalog.cnnvd_count > 0
+      ? `已补录 ${ruleCatalog.cnnvd_count} 条 CNNVD 对应关系，可在漏洞页按编号类型精确筛选。`
+      : 'CNNVD 映射链路已支持，但当前仍在持续补录可核实的对应关系。'
+
+  const assetByID = useMemo(() => {
+    const indexed: Record<string, Asset> = {}
+    assets.forEach((asset) => {
+      indexed[asset.id] = asset
+    })
+    return indexed
+  }, [assets])
+
+  const targetColumns = [
+    { title: '目标', dataIndex: 'target', key: 'target', width: 150 },
+    {
+      title: '状态',
+      dataIndex: 'status_text',
+      key: 'status_text',
+      width: 130,
+      render: (_: string, record: TaskTargetStatus) => {
+        const colorMap: Record<TaskTargetStatus['status'], string> = {
+          identified: 'success',
+          scanned_no_agent: 'default',
+          pending: 'processing',
+          scanning: 'blue',
+          out_of_scope: 'warning',
+        }
+        return <Tag color={colorMap[record.status]}>{record.status_text}</Tag>
+      },
+    },
+    {
+      title: 'IP',
+      dataIndex: 'ip',
+      key: 'ip',
+      width: 130,
+      render: (v?: string) => v || '-',
+    },
+    {
+      title: '端口',
+      dataIndex: 'port',
+      key: 'port',
+      width: 70,
+      render: (v?: number) => v ?? '-',
+    },
     {
       title: 'Agent',
       dataIndex: 'agent_type',
       key: 'type',
       width: 100,
-      render: (v: string) => <Tag color="blue">{v}</Tag>,
+      render: (v?: string) => (v ? <Tag color="blue">{v}</Tag> : '-'),
     },
-    { title: '版本', dataIndex: 'version', key: 'ver', width: 110 },
+    { title: '版本', dataIndex: 'version', key: 'ver', width: 110, render: (v?: string) => v || '-' },
     {
       title: '认证',
       dataIndex: 'auth_mode',
       key: 'auth',
       width: 110,
-      render: (v: string) => <AuthTag mode={v} />,
+      render: (v?: string) => (v ? <AuthTag mode={v} /> : '-'),
     },
     {
       title: '风险',
       dataIndex: 'risk_level',
       key: 'risk',
       width: 80,
-      render: (v: string) => <RiskTag level={v} />,
+      render: (v?: string) => (v ? <RiskTag level={v} /> : '-'),
     },
     {
       title: '置信度',
       dataIndex: 'confidence',
       key: 'conf',
       width: 80,
-      render: (v: number) => `${Math.round(v)}%`,
+      render: (v?: number) => (typeof v === 'number' ? `${Math.round(v)}%` : '-'),
     },
     {
       title: '漏洞数',
       key: 'vuln_count',
       width: 90,
-      render: (_: unknown, record: Asset) => {
-        const count = vulnsByAssetId[record.id]?.length ?? 0
+      render: (_: unknown, record: TaskTargetStatus) => {
+        const count = record.vuln_count ?? 0
         return count > 0 ? <Tag color="red">{count}</Tag> : <Tag>{count}</Tag>
       },
+    },
+    {
+      title: '说明',
+      dataIndex: 'summary',
+      key: 'summary',
+      ellipsis: true,
     },
   ]
 
@@ -104,7 +172,7 @@ export default function TaskDetail() {
       width: 100,
       render: (v: string | undefined) => (v ? <Tag color="blue">{v}</Tag> : '-'),
     },
-    { title: 'CVE', dataIndex: 'cve_id', key: 'cve', width: 150, render: (v: string) => v || '-' },
+    { title: '漏洞编号', key: 'identifier', width: 240, render: (_: unknown, record: Vulnerability) => renderIdentifiers(record) },
     { title: '标题', dataIndex: 'title', key: 'title', width: 300, ellipsis: true },
     {
       title: '等级',
@@ -124,7 +192,16 @@ export default function TaskDetail() {
     { title: '修复', dataIndex: 'remediation', key: 'fix', ellipsis: true },
   ]
 
-  const renderAssetVulns = (asset: Asset) => {
+  const renderTargetDetail = (record: TaskTargetStatus) => {
+    if (!record.asset_id) {
+      return <Typography.Text type="secondary">{record.summary}</Typography.Text>
+    }
+
+    const asset = assetByID[record.asset_id]
+    if (!asset) {
+      return <Typography.Text type="secondary">{record.summary}</Typography.Text>
+    }
+
     const relatedVulns = vulnsByAssetId[asset.id] ?? []
     if (relatedVulns.length === 0) {
       return <Typography.Text type="secondary">该资产当前没有关联漏洞。</Typography.Text>
@@ -137,7 +214,7 @@ export default function TaskDetail() {
         pagination={false}
         dataSource={relatedVulns}
         columns={[
-          { title: 'CVE', dataIndex: 'cve_id', key: 'cve', width: 150, render: (v: string) => v || '-' },
+          { title: '漏洞编号', key: 'identifier', width: 240, render: (_: unknown, record: Vulnerability) => renderIdentifiers(record) },
           { title: '标题', dataIndex: 'title', key: 'title', ellipsis: true },
           {
             title: '等级',
@@ -167,6 +244,9 @@ export default function TaskDetail() {
         </Descriptions.Item>
         <Descriptions.Item label="Agent类型">{record.agent_type || '-'}</Descriptions.Item>
         <Descriptions.Item label="资产版本">{record.asset_version || '-'}</Descriptions.Item>
+        <Descriptions.Item label="漏洞编号" span={2}>
+          {renderIdentifiers(record)}
+        </Descriptions.Item>
         <Descriptions.Item label="认证模式">
           {record.auth_mode ? <AuthTag mode={record.auth_mode} /> : '-'}
         </Descriptions.Item>
@@ -182,7 +262,16 @@ export default function TaskDetail() {
           {record.detected_at ? new Date(record.detected_at).toLocaleString('zh-CN') : '-'}
         </Descriptions.Item>
         <Descriptions.Item label="完整描述" span={2}>
-          {record.description || '-'}
+          <Space direction="vertical" size={4} style={{ width: '100%' }}>
+            <div>
+              <Typography.Text strong>中文：</Typography.Text>
+              <Typography.Text>{record.description_zh || '-'}</Typography.Text>
+            </div>
+            <div>
+              <Typography.Text strong>English:</Typography.Text>
+              <Typography.Text>{record.description || '-'}</Typography.Text>
+            </div>
+          </Space>
         </Descriptions.Item>
         <Descriptions.Item label="修复建议" span={2}>
           <Typography.Text type="success">{record.remediation || '-'}</Typography.Text>
@@ -247,9 +336,9 @@ export default function TaskDetail() {
           type={ruleCatalog.consistent ? 'info' : 'warning'}
           showIcon
           message={`漏洞规则库更新时间：${ruleCatalog.updated_at || '未标注'}，上游截止：${ruleCatalog.source_cutoff || '未标注'}`}
-          description={`内置 ${ruleCatalog.cve_count} 条 CVE 规则，${ruleCatalog.poc_count} 条 PoC 规则。${
+          description={`当前内置 ${ruleCatalog.rule_count} 条版本规则，其中 CVE ${ruleCatalog.cve_count} 条、CNNVD ${ruleCatalog.cnnvd_count} 条、GHSA ${ruleCatalog.ghsa_count} 条，PoC ${ruleCatalog.poc_count} 条。${
             ruleCatalog.consistent ? '当前映射校验通过。' : `当前存在 ${ruleCatalog.issues.length} 条映射告警。`
-          }${ruleCatalog.notes ? ` ${ruleCatalog.notes}` : ''}`}
+          } ${mappingStatusText}${ruleCatalog.notes ? ` ${ruleCatalog.notes}` : ''}`}
         />
       )}
 
@@ -267,16 +356,16 @@ export default function TaskDetail() {
         items={[
           {
             key: 'assets',
-            label: `资产 (${assetTotal})`,
+            label: `目标状态 (${assetTotal})`,
             children: (
               <Table
-                columns={assetColumns}
-                dataSource={assets}
-                rowKey="id"
+                columns={targetColumns}
+                dataSource={targetStatuses}
+                rowKey={(record) => record.asset_id || `target-${record.target}-${record.status}`}
                 size="small"
                 pagination={{ pageSize: 10 }}
-                expandable={{ expandedRowRender: renderAssetVulns }}
-                scroll={{ x: 1100 }}
+                expandable={{ expandedRowRender: renderTargetDetail }}
+                scroll={{ x: 1380 }}
               />
             ),
           },

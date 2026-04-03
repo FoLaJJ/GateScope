@@ -59,6 +59,7 @@ export function makeVulnerability(overrides: Partial<Vulnerability> = {}): Vulne
     cve_id: 'CVE-2026-0001',
     title: '默认漏洞',
     description: '默认漏洞描述',
+    description_zh: '默认中文漏洞描述',
     severity: 'critical',
     cvss: 9.8,
     check_type: 'cve_match',

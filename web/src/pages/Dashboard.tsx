@@ -10,6 +10,7 @@ import StatCards from '@/components/StatCards'
 import StatusBadge from '@/components/StatusBadge'
 import RiskTag from '@/components/RiskTag'
 import { RISK_COLORS, RISK_LABELS, RISK_LEVELS } from '@/constants'
+import { getPreferredDescription, listVulnerabilityIdentifiers } from '@/utils/vuln'
 import type { Task, Vulnerability } from '@/types'
 
 export default function Dashboard() {
@@ -173,9 +174,7 @@ export default function Dashboard() {
             }
             size="small"
             extra={
-              <Link to="/tasks">
-                <Typography.Link>查看全部</Typography.Link>
-              </Link>
+              <Link to="/tasks">查看全部</Link>
             }
           >
             <List
@@ -190,9 +189,7 @@ export default function Dashboard() {
                 >
                   <List.Item.Meta
                     title={
-                      <Link to={`/tasks/${t.id}`}>
-                        <Typography.Link>{t.name}</Typography.Link>
-                      </Link>
+                      <Link to={`/tasks/${t.id}`}>{t.name}</Link>
                     }
                     description={
                       <Space size="small">
@@ -218,35 +215,42 @@ export default function Dashboard() {
             }
             size="small"
             extra={
-              <Link to="/vulnerabilities">
-                <Typography.Link>查看全部</Typography.Link>
-              </Link>
+              <Link to="/vulnerabilities">查看全部</Link>
             }
           >
             <List
               dataSource={recentVulns}
-              renderItem={(v: Vulnerability) => (
-                <List.Item>
-                  <List.Item.Meta
-                    title={
-                      <Space size="small">
-                        <RiskTag level={v.severity} />
-                        <Tooltip title={v.description}>
-                          <Typography.Text ellipsis style={{ maxWidth: 300 }}>
-                            {v.title}
-                          </Typography.Text>
-                        </Tooltip>
-                      </Space>
-                    }
-                    description={
-                      <Space size="small">
-                        {v.cve_id && <Tag color="geekblue">{v.cve_id}</Tag>}
-                        <Typography.Text type="secondary">CVSS {v.cvss?.toFixed(1)}</Typography.Text>
-                      </Space>
-                    }
-                  />
-                </List.Item>
-              )}
+              renderItem={(v: Vulnerability) => {
+                const identifiers = listVulnerabilityIdentifiers(v)
+                return (
+                  <List.Item>
+                    <List.Item.Meta
+                      title={
+                        <Space size="small">
+                          <RiskTag level={v.severity} />
+                          <Tooltip title={getPreferredDescription(v)}>
+                            <Typography.Text ellipsis style={{ maxWidth: 300 }}>
+                              {v.title}
+                            </Typography.Text>
+                          </Tooltip>
+                        </Space>
+                      }
+                      description={
+                        <Space size="small">
+                          {identifiers.map((identifier) => (
+                            <Tag color="geekblue" key={identifier.key}>
+                              <a href={identifier.href} target="_blank" rel="noreferrer">
+                                {identifier.label}
+                              </a>
+                            </Tag>
+                          ))}
+                          <Typography.Text type="secondary">CVSS {v.cvss?.toFixed(1)}</Typography.Text>
+                        </Space>
+                      }
+                    />
+                  </List.Item>
+                )
+              }}
               locale={{ emptyText: '暂无漏洞' }}
             />
           </Card>

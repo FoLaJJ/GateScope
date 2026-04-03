@@ -58,6 +58,22 @@ export interface TaskEvent {
   created_at?: string
 }
 
+export interface TaskTargetStatus {
+  target: string
+  status: 'identified' | 'scanned_no_agent' | 'pending' | 'scanning' | 'out_of_scope'
+  status_text: string
+  summary: string
+  asset_id?: string
+  ip?: string
+  port?: number
+  agent_type?: string
+  version?: string
+  auth_mode?: string
+  risk_level?: RiskLevel
+  confidence?: number
+  vuln_count?: number
+}
+
 export interface CreateTaskRequest {
   name: string
   description?: string
@@ -106,8 +122,11 @@ export interface Vulnerability {
   risk_level?: RiskLevel
   asset_label?: string
   cve_id?: string
+  cnnvd_id?: string
+  ghsa_id?: string
   title: string
   description?: string
+  description_zh?: string
   severity: Severity
   cvss: number
   check_type: CheckType
@@ -122,7 +141,10 @@ export interface RuleCatalogMetadata {
   source_cutoff?: string
   source?: string
   notes?: string
+  rule_count: number
   cve_count: number
+  cnnvd_count: number
+  ghsa_count: number
   poc_count: number
   consistent: boolean
   issues: string[]
