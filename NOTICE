@@ -1,0 +1,25 @@
+GateScope
+
+Derived-from notice:
+
+- This repository is an independent derivative project based on `AgentScan`
+  from `https://github.com/AutoScan/agentscan`.
+- The upstream project is distributed under the MIT License.
+- This repository does not claim to be the upstream official release.
+
+Key fork-specific work included here:
+
+- Unified runtime control via `agentscanctl`
+- Login autofill and one-click login
+- Task event persistence and replay
+- UI asset-to-vulnerability attribution
+- Excel export improvements with asset context
+- Full evidence retention for new scans
+- YAML-based OpenClaw rule maintenance under `configs/rules/`
+- Rule metadata exposure and PoC/CVE normalization
+- PoC-priority deduplication over version-only hits
+
+Branding note:
+
+- The public-facing project name used in this repository is `GateScope`.
+- Internal Go module paths may still reference the upstream import path for compatibility and to avoid unnecessary refactors.

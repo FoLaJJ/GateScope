@@ -1,0 +1,25 @@
+pocs:
+  - id: "ws_origin_bypass"
+    name: "WebSocket Origin Bypass"
+    cve_id: "CVE-2026-25253"
+    severity: "high"
+    cvss: 8.8
+    remediation: "Upgrade to >= 2026.2.25 or enforce Origin header validation"
+  - id: "path_traversal"
+    name: "Path Traversal via Skill Paths"
+    cve_id: "CVE-2026-26972"
+    severity: "high"
+    cvss: 7.5
+    remediation: "Upgrade to >= 2026.3.2"
+  - id: "ssrf_proxy"
+    name: "SSRF via Agent Request Proxy"
+    cve_id: "CVE-2026-22234"
+    severity: "high"
+    cvss: 7.5
+    remediation: "Upgrade to >= 2026.2.14"
+  - id: "unauth_api"
+    name: "Unauthenticated API Access"
+    cve_id: ""
+    severity: "high"
+    cvss: 8.0
+    remediation: "Configure authentication (token_auth or device_auth) for all API endpoints"

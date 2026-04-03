@@ -1,0 +1,53 @@
+# GateScope 配置文件
+# 环境变量覆盖: AGENTSCAN_<SECTION>_<KEY>, 例如 AGENTSCAN_SERVER_PORT=9090
+
+server:
+  host: "0.0.0.0"
+  port: 8080
+
+database:
+  # driver: sqlite | postgres
+  driver: "sqlite"
+  # SQLite: 文件路径; PostgreSQL: "host=... port=... user=... password=... dbname=... sslmode=disable"
+  dsn: "_data/agentscan.db"
+  max_open_conn: 25
+  max_idle_conn: 5
+  max_lifetime: "5m"
+
+scanner:
+  default_ports: [18789, 18792, 3000, 8080, 8888]
+  timeout: "3s"
+  concurrency: 100
+  rate_limit: 10000
+  l1_scan_mode: "connect"
+  enable_mdns: true
+  mdns_timeout: "5s"
+
+auth:
+  # 生产环境必须修改此值
+  jwt_secret: "agentscan-dev-secret-change-me"
+  username: "admin"
+  password: "agentscan"
+  token_ttl: "24h"
+
+alert:
+  enabled: false
+  webhook_url: ""
+  webhook_timeout: "10s"
+
+geoip:
+  database_path: ""
+  license_key: ""
+
+intel:
+  fofa:
+    email: ""
+    api_key: ""
+
+log:
+  # level: debug | info | warn | error
+  level: "info"
+  # format: console | json
+  format: "console"
+  # file: 留空则输出到 stdout
+  file: ""

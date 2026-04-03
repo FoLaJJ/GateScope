@@ -1,0 +1,579 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+RUN_DIR="$ROOT_DIR/_data/run"
+LOG_DIR="$ROOT_DIR/_data/logs"
+BACKUP_DIR="$ROOT_DIR/_data/backups"
+BIN_DIR="$ROOT_DIR/bin"
+BIN_FILE="$BIN_DIR/agentscan"
+PID_FILE="$RUN_DIR/agentscan.pid"
+LOG_FILE="$LOG_DIR/agentscan.log"
+WEB_DIR="$ROOT_DIR/web"
+WEB_DIST_DIR="$WEB_DIR/dist"
+WEB_DIST_INDEX="$WEB_DIST_DIR/index.html"
+CONFIG_FILE="${AGENTSCAN_CONFIG:-$ROOT_DIR/_data/config.yaml}"
+BUILD_WEB=0
+TAIL_LINES=120
+
+usage() {
+  cat <<'EOF'
+GateScope control
+
+Usage:
+  ./agentscanctl help
+  ./agentscanctl install [--config /path/to/config.yaml]
+  ./agentscanctl build [--build-web] [--config /path/to/config.yaml]
+  ./agentscanctl start [--build-web] [--config /path/to/config.yaml]
+  ./agentscanctl stop [--config /path/to/config.yaml]
+  ./agentscanctl restart [--build-web] [--config /path/to/config.yaml]
+  ./agentscanctl status [--config /path/to/config.yaml]
+  ./agentscanctl logs [--lines 200] [--config /path/to/config.yaml]
+  ./agentscanctl env [--config /path/to/config.yaml]
+  ./agentscanctl doctor [--config /path/to/config.yaml]
+  ./agentscanctl backup-db [--config /path/to/config.yaml]
+  ./agentscanctl cleanup-db [--config /path/to/config.yaml]
+  ./agentscanctl reset-db [--config /path/to/config.yaml]
+
+Main commands:
+  install      Prepare runtime directories, create config, install web deps, build web and backend
+  build        Build backend; build web when --build-web is used or web/dist is missing
+  start        Build if needed and start GateScope in background
+  stop         Stop the managed GateScope process only
+  restart      Stop then start GateScope
+  status       Show running status, URL and port listener
+  logs         Tail GateScope logs
+  env          Show key paths and current runtime layout
+  doctor       Quick environment and runtime self-check
+
+Database commands:
+  backup-db    Backup the configured SQLite database to _data/backups
+  cleanup-db   Backup DB, remove orphan rows, restart if it was running
+  reset-db     Backup DB, clear DB files, restart if it was running
+
+Aliases:
+  run=start  setup/install/init=install  backup=backup-db
+  cleanup=cleanup-db  reset=reset-db  paths=env
+
+Important layout:
+  ./agentscanctl          Single entrypoint
+  ./_data/config.yaml     Runtime config
+  ./_data/agentscan.db    Default SQLite database
+  ./_data/logs/           Runtime logs
+  ./_data/backups/        Database backups
+  ./bin/agentscan         Built backend binary
+  ./web/                  Frontend source
+
+Options:
+  --build-web   Force rebuild web/dist before backend build
+  --config      Use a custom config file
+  --lines N     Used by logs, default 120
+EOF
+}
+
+read_config_value() {
+  local section="$1"
+  local key="$2"
+  local file="$3"
+
+  awk -v section="$section" -v key="$key" '
+    $0 ~ "^[[:space:]]*" section ":[[:space:]]*$" { in_section=1; next }
+    in_section && $0 ~ "^[^[:space:]]" { in_section=0 }
+    in_section {
+      line = $0
+      sub(/^[[:space:]]+/, "", line)
+      if (line ~ "^" key ":[[:space:]]*") {
+        sub("^" key ":[[:space:]]*", "", line)
+        gsub(/"/, "", line)
+        print line
+        exit
+      }
+    }
+  ' "$file"
+}
+
+resolve_path() {
+  local path="$1"
+  if [[ -z "$path" ]]; then
+    printf '%s\n' ""
+  elif [[ "$path" = /* ]]; then
+    printf '%s\n' "$path"
+  else
+    printf '%s\n' "$ROOT_DIR/$path"
+  fi
+}
+
+require_cmd() {
+  local cmd="$1"
+  local hint="${2:-}"
+  if ! command -v "$cmd" >/dev/null 2>&1; then
+    echo "Missing required command: $cmd" >&2
+    if [[ -n "$hint" ]]; then
+      echo "$hint" >&2
+    fi
+    exit 1
+  fi
+}
+
+is_running() {
+  local pid="$1"
+  [[ -n "$pid" ]] && kill -0 "$pid" 2>/dev/null
+}
+
+port_listener() {
+  local port="$1"
+  ss -ltnp 2>/dev/null | grep -E "[:.]${port}[[:space:]]" || true
+}
+
+ensure_paths() {
+  mkdir -p "$RUN_DIR" "$LOG_DIR" "$BACKUP_DIR" "$BIN_DIR" "$ROOT_DIR/_data"
+}
+
+ensure_config() {
+  ensure_paths
+
+  if [[ ! -f "$CONFIG_FILE" ]]; then
+    if [[ -f "$ROOT_DIR/configs/config.yaml.example" ]]; then
+      cp "$ROOT_DIR/configs/config.yaml.example" "$CONFIG_FILE"
+      echo "Created config from template: $CONFIG_FILE"
+    else
+      echo "Config file not found and no template available: $CONFIG_FILE" >&2
+      exit 1
+    fi
+  fi
+}
+
+load_runtime_values() {
+  ensure_config
+
+  HOST="$(read_config_value server host "$CONFIG_FILE")"
+  PORT="$(read_config_value server port "$CONFIG_FILE")"
+  HOST="${HOST:-0.0.0.0}"
+  PORT="${PORT:-8080}"
+
+  DISPLAY_HOST="$HOST"
+  if [[ "$DISPLAY_HOST" == "0.0.0.0" || "$DISPLAY_HOST" == "::" || -z "$DISPLAY_HOST" ]]; then
+    DISPLAY_HOST="$(hostname -I 2>/dev/null | awk '{print $1}')"
+    DISPLAY_HOST="${DISPLAY_HOST:-127.0.0.1}"
+  fi
+
+  DB_DRIVER="$(read_config_value database driver "$CONFIG_FILE")"
+  DB_DSN="$(read_config_value database dsn "$CONFIG_FILE")"
+  DB_DRIVER="${DB_DRIVER:-sqlite}"
+  DB_DSN="${DB_DSN:-_data/agentscan.db}"
+  DB_PATH=""
+  if [[ "$DB_DRIVER" == "sqlite" ]]; then
+    DB_PATH="$(resolve_path "$DB_DSN")"
+  fi
+}
+
+install_web_deps() {
+  require_cmd npm "Install Node.js/npm first."
+  if [[ ! -d "$WEB_DIR/node_modules" ]]; then
+    echo "Installing frontend dependencies..."
+    (cd "$WEB_DIR" && npm install)
+  else
+    echo "Frontend dependencies already present: $WEB_DIR/node_modules"
+  fi
+}
+
+build_web_assets() {
+  install_web_deps
+  echo "Building frontend..."
+  (cd "$WEB_DIR" && npm run build)
+}
+
+build_backend() {
+  require_cmd go "Install Go first."
+  echo "Building backend..."
+  (
+    cd "$ROOT_DIR"
+    export GOTOOLCHAIN="${GOTOOLCHAIN:-auto}"
+    export CGO_ENABLED=1
+    go build -trimpath -o "$BIN_FILE" ./cmd/agentscan
+  )
+}
+
+build_all() {
+  load_runtime_values
+
+  if [[ "$BUILD_WEB" == "1" || ! -f "$WEB_DIST_INDEX" ]]; then
+    build_web_assets
+  else
+    echo "Frontend build already present: $WEB_DIST_INDEX"
+  fi
+
+  build_backend
+}
+
+show_env() {
+  load_runtime_values
+
+  cat <<EOF
+GateScope layout
+  root:       $ROOT_DIR
+  ctl:        $ROOT_DIR/agentscanctl
+  config:     $CONFIG_FILE
+  binary:     $BIN_FILE
+  pid_file:   $PID_FILE
+  log_file:   $LOG_FILE
+  web_dir:    $WEB_DIR
+  web_dist:   $WEB_DIST_DIR
+  db_driver:  $DB_DRIVER
+  db_path:    ${DB_PATH:-n/a}
+  listen:     http://$DISPLAY_HOST:$PORT/
+
+Recommended daily use
+  ./agentscanctl install
+  ./agentscanctl start
+  ./agentscanctl status
+  ./agentscanctl logs
+  ./agentscanctl stop
+EOF
+}
+
+show_status() {
+  load_runtime_values
+
+  if [[ -f "$PID_FILE" ]]; then
+    PID="$(cat "$PID_FILE" 2>/dev/null || true)"
+    if [[ -n "$PID" ]] && is_running "$PID"; then
+      echo "Status: running"
+      echo "PID: $PID"
+      echo "URL: http://$DISPLAY_HOST:$PORT/"
+      echo "Log: $LOG_FILE"
+    else
+      echo "Status: stale pid file"
+      echo "PID file: $PID_FILE"
+    fi
+  else
+    echo "Status: not running"
+  fi
+
+  echo "Port check:"
+  port_listener "$PORT" || echo "No listener on port $PORT"
+}
+
+show_logs() {
+  ensure_paths
+  if [[ ! -f "$LOG_FILE" ]]; then
+    echo "Log file not found: $LOG_FILE"
+    return 0
+  fi
+  tail -n "$TAIL_LINES" "$LOG_FILE"
+}
+
+doctor() {
+  load_runtime_values
+
+  echo "Environment check"
+  for cmd in bash ss python3 go npm; do
+    if command -v "$cmd" >/dev/null 2>&1; then
+      echo "  [ok] $cmd"
+    else
+      echo "  [missing] $cmd"
+    fi
+  done
+
+  echo "Files"
+  [[ -f "$CONFIG_FILE" ]] && echo "  [ok] config: $CONFIG_FILE" || echo "  [missing] config: $CONFIG_FILE"
+  [[ -f "$BIN_FILE" ]] && echo "  [ok] binary: $BIN_FILE" || echo "  [missing] binary: $BIN_FILE"
+  [[ -f "$WEB_DIST_INDEX" ]] && echo "  [ok] web dist: $WEB_DIST_INDEX" || echo "  [missing] web dist: $WEB_DIST_INDEX"
+  if [[ "$DB_DRIVER" == "sqlite" ]]; then
+    [[ -f "$DB_PATH" ]] && echo "  [ok] db: $DB_PATH" || echo "  [missing] db: $DB_PATH"
+  fi
+
+  echo "Runtime"
+  show_status
+}
+
+start_service() {
+  build_all
+
+  if [[ -f "$PID_FILE" ]]; then
+    CURRENT_PID="$(cat "$PID_FILE" 2>/dev/null || true)"
+    if is_running "$CURRENT_PID"; then
+      echo "GateScope is already running."
+      echo "PID: $CURRENT_PID"
+      echo "URL: http://$DISPLAY_HOST:$PORT/"
+      return 0
+    fi
+    rm -f "$PID_FILE"
+  fi
+
+  PORT_IN_USE="$(port_listener "$PORT")"
+  if [[ -n "$PORT_IN_USE" ]]; then
+    echo "Port $PORT is already in use. Refusing to start to avoid touching an existing process."
+    echo "$PORT_IN_USE"
+    return 1
+  fi
+
+  nohup "$BIN_FILE" server --config "$CONFIG_FILE" >> "$LOG_FILE" 2>&1 < /dev/null &
+  PID=$!
+  echo "$PID" > "$PID_FILE"
+
+  sleep 2
+  if ! is_running "$PID"; then
+    echo "GateScope failed to stay up. Recent log output:"
+    tail -n 40 "$LOG_FILE" || true
+    rm -f "$PID_FILE"
+    return 1
+  fi
+
+  PORT_IN_USE="$(port_listener "$PORT")"
+  if [[ -z "$PORT_IN_USE" ]]; then
+    echo "GateScope process started but port $PORT is not listening yet. Recent log output:"
+    tail -n 40 "$LOG_FILE" || true
+    return 1
+  fi
+
+  echo "GateScope started successfully."
+  echo "PID: $PID"
+  echo "URL: http://$DISPLAY_HOST:$PORT/"
+  echo "Log: $LOG_FILE"
+}
+
+stop_service() {
+  load_runtime_values
+
+  if [[ ! -f "$PID_FILE" ]]; then
+    echo "No managed GateScope process found."
+    return 0
+  fi
+
+  PID="$(cat "$PID_FILE" 2>/dev/null || true)"
+  if [[ -z "$PID" ]]; then
+    rm -f "$PID_FILE"
+    echo "PID file was empty and has been removed."
+    return 0
+  fi
+
+  if ! is_running "$PID"; then
+    rm -f "$PID_FILE"
+    echo "Process $PID is not running. Removed stale PID file."
+    return 0
+  fi
+
+  kill "$PID"
+  for _ in $(seq 1 20); do
+    if ! is_running "$PID"; then
+      rm -f "$PID_FILE"
+      echo "GateScope stopped."
+      return 0
+    fi
+    sleep 1
+  done
+
+  echo "Process $PID did not exit within 20 seconds. No force kill was used."
+  return 1
+}
+
+install_env() {
+  load_runtime_values
+  require_cmd python3 "Python 3 is required for database maintenance commands."
+  build_web_assets
+  build_backend
+  echo "Install complete."
+  show_env
+}
+
+backup_db() {
+  load_runtime_values
+
+  if [[ "$DB_DRIVER" != "sqlite" ]]; then
+    echo "backup-db currently supports sqlite only. Configured driver: $DB_DRIVER" >&2
+    return 1
+  fi
+
+  if [[ ! -f "$DB_PATH" ]]; then
+    echo "Database file not found: $DB_PATH"
+    return 0
+  fi
+
+  local stamp backup_path
+  stamp="$(date +%Y%m%d_%H%M%S)"
+  backup_path="$BACKUP_DIR/agentscan_${stamp}.db"
+  cp "$DB_PATH" "$backup_path"
+
+  if [[ -f "${DB_PATH}-wal" ]]; then
+    cp "${DB_PATH}-wal" "${backup_path}-wal"
+  fi
+  if [[ -f "${DB_PATH}-shm" ]]; then
+    cp "${DB_PATH}-shm" "${backup_path}-shm"
+  fi
+
+  echo "Database backup created: $backup_path"
+}
+
+reset_db() {
+  load_runtime_values
+
+  if [[ "$DB_DRIVER" != "sqlite" ]]; then
+    echo "reset-db currently supports sqlite only. Configured driver: $DB_DRIVER" >&2
+    return 1
+  fi
+
+  local was_running=0
+  if [[ -f "$PID_FILE" ]]; then
+    local current_pid
+    current_pid="$(cat "$PID_FILE" 2>/dev/null || true)"
+    if is_running "$current_pid"; then
+      was_running=1
+      stop_service
+    fi
+  fi
+
+  backup_db
+
+  rm -f "$DB_PATH" "${DB_PATH}-wal" "${DB_PATH}-shm"
+  echo "Database reset complete: $DB_PATH"
+
+  if [[ "$was_running" == "1" ]]; then
+    start_service
+  fi
+}
+
+cleanup_db() {
+  load_runtime_values
+  require_cmd python3 "Python 3 is required for cleanup-db."
+
+  if [[ "$DB_DRIVER" != "sqlite" ]]; then
+    echo "cleanup-db currently supports sqlite only. Configured driver: $DB_DRIVER" >&2
+    return 1
+  fi
+
+  local was_running=0
+  if [[ -f "$PID_FILE" ]]; then
+    local current_pid
+    current_pid="$(cat "$PID_FILE" 2>/dev/null || true)"
+    if is_running "$current_pid"; then
+      was_running=1
+      stop_service
+    fi
+  fi
+
+  backup_db
+
+  python3 - <<PY
+import sqlite3
+conn = sqlite3.connect(r"$DB_PATH")
+cur = conn.cursor()
+for table in ("vulnerabilities", "assets", "scan_results"):
+    cur.execute(f"delete from {table} where task_id not in (select id from tasks)")
+conn.commit()
+for table in ("vulnerabilities", "assets", "scan_results"):
+    count = cur.execute(f"select count(*) from {table}").fetchone()[0]
+    print(f"{table}: {count}")
+conn.close()
+PY
+  echo "Database orphan cleanup complete: $DB_PATH"
+
+  if [[ "$was_running" == "1" ]]; then
+    start_service
+  fi
+}
+
+COMMAND="${1:-}"
+if [[ -z "$COMMAND" ]]; then
+  usage
+  exit 1
+fi
+shift || true
+
+case "$COMMAND" in
+  help|-h|--help)
+    usage
+    exit 0
+    ;;
+  run)
+    COMMAND="start"
+    ;;
+  setup|init)
+    COMMAND="install"
+    ;;
+  backup)
+    COMMAND="backup-db"
+    ;;
+  cleanup)
+    COMMAND="cleanup-db"
+    ;;
+  reset)
+    COMMAND="reset-db"
+    ;;
+  paths)
+    COMMAND="env"
+    ;;
+esac
+
+while [[ $# -gt 0 ]]; do
+  case "$1" in
+    --build-web)
+      BUILD_WEB=1
+      shift
+      ;;
+    --config)
+      [[ $# -ge 2 ]] || { usage; exit 1; }
+      CONFIG_FILE="$2"
+      shift 2
+      ;;
+    --lines)
+      [[ $# -ge 2 ]] || { usage; exit 1; }
+      TAIL_LINES="$2"
+      shift 2
+      ;;
+    -h|--help)
+      usage
+      exit 0
+      ;;
+    *)
+      echo "Unknown option: $1" >&2
+      usage
+      exit 1
+      ;;
+  esac
+done
+
+case "$COMMAND" in
+  install)
+    install_env
+    ;;
+  build)
+    build_all
+    ;;
+  start)
+    start_service
+    ;;
+  stop)
+    stop_service
+    ;;
+  restart)
+    stop_service || true
+    start_service
+    ;;
+  status)
+    show_status
+    ;;
+  logs)
+    show_logs
+    ;;
+  env)
+    show_env
+    ;;
+  doctor)
+    doctor
+    ;;
+  backup-db)
+    backup_db
+    ;;
+  cleanup-db)
+    cleanup_db
+    ;;
+  reset-db)
+    reset_db
+    ;;
+  *)
+    echo "Unknown command: $COMMAND" >&2
+    usage
+    exit 1
+    ;;
+esac

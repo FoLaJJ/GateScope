@@ -1,0 +1,37 @@
+services:
+  agentscan:
+    image: ghcr.io/autoscan/agentscan:latest
+    # To build locally instead of pulling, uncomment:
+    # build: .
+    container_name: agentscan
+    restart: unless-stopped
+    ports:
+      - "8080:8080"
+    volumes:
+      - agentscan-data:/data
+    environment:
+      AGENTSCAN_DATABASE_DRIVER: sqlite
+      AGENTSCAN_DATABASE_DSN: /data/agentscan.db
+      AGENTSCAN_AUTH_JWT_SECRET: "${JWT_SECRET:-change-me-in-production}"
+      AGENTSCAN_AUTH_USERNAME: "${ADMIN_USER:-admin}"
+      AGENTSCAN_AUTH_PASSWORD: "${ADMIN_PASS:-agentscan}"
+      AGENTSCAN_LOG_FORMAT: json
+
+  # Optional: PostgreSQL for production
+  # Uncomment and set AGENTSCAN_DATABASE_DRIVER=postgres
+  # postgres:
+  #   image: postgres:16-alpine
+  #   container_name: agentscan-db
+  #   restart: unless-stopped
+  #   environment:
+  #     POSTGRES_DB: agentscan
+  #     POSTGRES_USER: agentscan
+  #     POSTGRES_PASSWORD: "${PG_PASSWORD:-agentscan}"
+  #   volumes:
+  #     - pg-data:/var/lib/postgresql/data
+  #   ports:
+  #     - "5432:5432"
+
+volumes:
+  agentscan-data:
+  # pg-data:

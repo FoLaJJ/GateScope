@@ -1,0 +1,42 @@
+# Compiled binaries
+bin/
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+
+# Go build cache & test
+*.test
+*.out
+*.prof
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+# Go module cache
+.gomodcache/
+
+# Runtime data (db, config overrides)
+_data/
+agentscan.db
+
+# Node
+node_modules/
+web/dist/
+web/tsconfig.tsbuildinfo
+
+# Documentation (internal design docs)
+docs/
+
+# Environment & secrets
+.env.local
+.env.*.local

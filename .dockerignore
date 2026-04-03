@@ -1,0 +1,14 @@
+.git
+.gitmodules
+_data/
+bin/
+docs/
+third_party/
+web/node_modules/
+web/dist/
+*.db
+.DS_Store
+.idea/
+.vscode/
+*.md
+!README.md

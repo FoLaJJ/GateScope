@@ -1,0 +1,25 @@
+# Slim runtime image used by CI — receives pre-built binaries.
+# TARGETARCH is set automatically by buildx (amd64 or arm64).
+FROM alpine:3.20
+
+ARG TARGETARCH
+RUN apk add --no-cache ca-certificates tzdata \
+    && addgroup -S agentscan && adduser -S agentscan -G agentscan
+
+COPY build/agentscan-linux-${TARGETARCH} /usr/local/bin/agentscan
+COPY configs/config.yaml.example /etc/agentscan/config.yaml
+
+RUN chmod +x /usr/local/bin/agentscan \
+    && mkdir -p /data && chown agentscan:agentscan /data
+VOLUME ["/data"]
+
+USER agentscan
+WORKDIR /data
+
+ENV AGENTSCAN_DATABASE_DSN=/data/agentscan.db \
+    AGENTSCAN_LOG_FORMAT=json
+
+EXPOSE 8080
+
+ENTRYPOINT ["agentscan"]
+CMD ["server"]
