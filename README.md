@@ -16,7 +16,7 @@
 归属和衍生说明：
 - 见 [NOTICE](NOTICE)
 
-## 这次 fork 主要改了什么
+## 本次更改
 
 - 增加一站式控制脚本 `./agentscanctl`，统一安装、构建、启动、停止、重启、状态、日志、环境检查、数据库备份、清理、重置。
 - 保留 `./gatescopectl` 作为别名包装，但文档默认以 `agentscanctl` 为主。
@@ -30,6 +30,30 @@
 - 页面中增加规则库元数据，能直接看到漏洞库截止日期和规则规模。
 - 版本规则补充 `GHSA/CNNVD` 外部编号字段，漏洞详情、任务详情和 Excel 导出可直接看到关联编号。
 - 版本规则与漏洞结果补充 `description_zh` 中文描述字段，页面与导出同时展示中英文说明。
+- 漏洞规则从“代码内置兜底”改成“YAML 唯一事实源”，避免以后每次补规则都改程序。
+- 新增 131 条基于 NVD OpenClaw 记录生成的版本规则，并补齐 1 条遗漏的官方 GHSA，当前规则库总量提升到 `177` 条。
+- `configs/rules/openclaw-id-mappings.yaml` 已合并 `155` 条 CNNVD 批量映射，页面和导出可直接渲染多编号。
+- 规则 schema 扩展出 `CNNVD/GHSA` 字段，PoC 命中时也会继承对应外部编号。
+- `177` 条 OpenClaw 版本规则已全部补齐 `description_zh`，漏洞详情页、任务详情页和 Excel 报告会同时展示中英文描述。
+- 新增 `scripts/verify_openclaw_ghsa.py`，可直接对照 OpenClaw GitHub 官方 advisories 校验本地 GHSA-only 规则编号和标题是否失真。
+- 新增 `scripts/verify_openclaw_poc_mappings.py`，可直接对照 NVD 在线元数据校验本地 `4` 条 PoC 规则关联的 `CVE/GHSA/严重等级/CVSS/修复版本` 是否一致。
+- 新增 `scripts/repair_vulnerability_catalog.py`，可按当前 YAML 规则库批量修复数据库内历史漏洞记录的 `CVE/CNNVD/GHSA/标题/等级/中文描述`。
+- 漏洞列表、任务详情、Dashboard 最近漏洞、Excel 报告都能展示 `CVE/CNNVD/GHSA`。
+- 规则元数据新增总规则数、`CVE/CNNVD/GHSA/PoC` 分项统计。
+- 漏洞页新增编号类型选择，可按 `CVE/CNNVD/GHSA` 精确筛选。
+- 修复 SQLite 并发写入导致的“任务统计有 Agent，但 `assets` 表少记录”问题；SQLite 模式现在强制单连接、`busy_timeout` 和 `WAL`。
+- 新增资产持久化保护：`UpsertAsset` 命中旧资产时会回写真实资产 ID，漏洞入库前会同步重映射，避免产生孤儿漏洞。
+- 新增 `007` 数据修复迁移：会从 `task_events` 的 `agent.identified` 事件里自动回填历史漏写资产，并把原来失联的漏洞重新挂回资产。
+- 前端导航收敛为 `态势大屏 / 扫描任务 / 资产管理 / 漏洞清单` 四个主视图，移除告警中心和情报中心，页面结构更直接。
+- 新增 `web/public/favicon.svg`，浏览器标签页会显示 GateScope 的站点图标。
+- `agentscanctl` 的 `status/start/stop/reset-db` 不再只信任当前目录的 PID 文件；会额外识别目标端口上的 `agentscan server` 进程，能区分“本 checkout 管理实例”和“其他 checkout 启动的实例”。
+- 后端启动时会先执行中断任务恢复和历史资产风险回算；异常退出留下的运行中任务会被自动标记为中断取消，旧资产风险会按“认证暴露基线 + 该资产最高漏洞等级取最大值”重新修正。
+- 前端 API 增加 `X-GateScope-Instance` 运行实例标识联动；后端实例变化时会主动 `resetQueries`，WebSocket 重连后会统一 `invalidateQueries`，减少 `reset-db` 或服务重启后页面残留旧缓存。
+- WebSocket 客户端补充心跳、指数退避重连和重连后的全局刷新联动，首次点开任务详情页时的连接稳定性更好。
+- 任务详情页把依赖数据的 hooks 固定放在加载态判断之前，修复首次查看详情时偶发的前端报错。
+- 风险和严重等级颜色统一成三层级口径：`critical/high` 使用红色，`medium` 使用黄色，`low/info` 使用绿色；态势大屏中的“资产风险分布”按红/绿两档聚合展示，“漏洞严重等级”和资产/漏洞标签保持一致。
+- 页面文案里的“置信度”统一明确为“识别置信度”，避免与漏洞验证置信度混淆。
+- 默认扫描端口集统一补入 `18790`，配置模板、CLI 默认参数、后端扫描管线和前端新建任务表单保持一致。
 
 ## OpenClaw 规则库状态
 
@@ -67,7 +91,7 @@
 
 当前登录页（2026-04-04，简化后的新版配色与一键登录入口）：
 
-![GateScope Login Current](docs/screenshots/login-current.png)
+![GateScope Login Current](./docs/screenshots/login-current.png)
 
 ## 本次新增的官方漏洞
 
@@ -86,44 +110,17 @@
 - `GHSA-jj6q-rrrf-h66h`：shared-secret 比较路径存在长度时序泄露，修复版本 `>= 2026.4.2`
 - `GHSA-fvx6-pj3r-5q4q`：复杂解释器管道可绕过 exec 脚本预检，修复版本 `>= 2026.4.2`
 
-## 这次实现还改了什么
-
-- 漏洞规则从“代码内置兜底”改成“YAML 唯一事实源”，避免以后每次补规则都改程序
-- 新增 131 条基于 NVD OpenClaw 记录生成的版本规则，并补齐 1 条遗漏的官方 GHSA，当前规则库总量提升到 177 条
-- `configs/rules/openclaw-id-mappings.yaml` 已合并 155 条 CNNVD 批量映射，页面和导出可直接渲染多编号
-- 规则 schema 扩展出 `CNNVD/GHSA` 字段，PoC 命中时也会继承对应外部编号
-- 177 条 OpenClaw 版本规则已全部补齐 `description_zh`，漏洞详情页、任务详情页和 Excel 报告会同时展示中英文描述
-- 新增 `scripts/verify_openclaw_ghsa.py`，可直接对照 OpenClaw GitHub 官方 advisories 校验本地 GHSA-only 规则编号和标题是否失真
-- 新增 `scripts/verify_openclaw_poc_mappings.py`，可直接对照 NVD 在线元数据校验本地 4 条 PoC 规则关联的 `CVE/GHSA/严重等级/CVSS/修复版本` 是否一致
-- 新增 `scripts/repair_vulnerability_catalog.py`，可按当前 YAML 规则库批量修复数据库内历史漏洞记录的 `CVE/CNNVD/GHSA/标题/等级/中文描述`
-- 漏洞列表、任务详情、Dashboard 最近漏洞、Excel 报告都能展示 `CVE/CNNVD/GHSA`
-- 规则元数据新增总规则数、`CVE/CNNVD/GHSA/PoC` 分项统计
-- 漏洞页新增编号类型选择，可按 `CVE/CNNVD/GHSA` 精确筛选
-- 修复 SQLite 并发写入导致的“任务统计有 Agent，但 `assets` 表少记录”问题；SQLite 模式现在强制单连接、`busy_timeout` 和 `WAL`
-- 新增资产持久化保护：`UpsertAsset` 命中旧资产时会回写真实资产 ID，漏洞入库前会同步重映射，避免产生孤儿漏洞
-- 新增 `007` 数据修复迁移：会从 `task_events` 的 `agent.identified` 事件里自动回填历史漏写资产，并把原来失联的漏洞重新挂回资产
-- 前端导航收敛为 `态势大屏 / 扫描任务 / 资产管理 / 漏洞清单` 四个主视图，移除告警中心和情报中心，页面结构更直接
-- 新增 `web/public/favicon.svg`，浏览器标签页会显示 GateScope 的站点图标
-- `agentscanctl` 的 `status/start/stop/reset-db` 不再只信任当前目录的 PID 文件；会额外识别目标端口上的 `agentscan server` 进程，能区分“本 checkout 管理实例”和“其他 checkout 启动的实例”
-- 后端启动时会先执行中断任务恢复和历史资产风险回算；异常退出留下的运行中任务会被自动标记为中断取消，旧资产风险会按“认证暴露基线 + 该资产最高漏洞等级取最大值”重新修正
-- 前端 API 增加 `X-GateScope-Instance` 运行实例标识联动；后端实例变化时会主动 `resetQueries`，WebSocket 重连后会统一 `invalidateQueries`，减少 `reset-db` 或服务重启后页面残留旧缓存
-- WebSocket 客户端补充心跳、指数退避重连和重连后的全局刷新联动，首次点开任务详情页时的连接稳定性更好
-- 任务详情页把依赖数据的 hooks 固定放在加载态判断之前，修复首次查看详情时偶发的前端报错
-- 风险和严重等级颜色统一成三层级口径：`critical/high` 使用红色，`medium` 使用黄色，`low/info` 使用绿色；态势大屏中的“资产风险分布”按红/绿两档聚合展示，“漏洞严重等级”和资产/漏洞标签保持一致
-- 页面文案里的“置信度”统一明确为“识别置信度”，避免与漏洞验证置信度混淆
-- 默认扫描端口集统一补入 `18790`，配置模板、CLI 默认参数、后端扫描管线和前端新建任务表单保持一致
-
 登录页：
 
-![GateScope Login](docs/screenshots/login.png)
+![GateScope Login](./docs/screenshots/login.png)
 
 扫描任务页：
 
-![GateScope Tasks](docs/screenshots/tasks.png)
+![GateScope Tasks](./docs/screenshots/tasks.png)
 
 漏洞列表页：
 
-![GateScope Vulnerabilities](docs/screenshots/vulnerabilities.png)
+![GateScope Vulnerabilities](./docs/screenshots/vulnerabilities.png)
 
 ## 一键运行
 
