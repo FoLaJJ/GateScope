@@ -1,10 +1,9 @@
 import { useEffect, useMemo, useState } from 'react'
 import type { ColumnsType } from 'antd/es/table'
-import { Table, Typography, Select, Space, Descriptions, Input, Tooltip, Tag, Button, Alert } from 'antd'
-import { BugOutlined, WarningOutlined, SafetyCertificateOutlined, SearchOutlined } from '@ant-design/icons'
+import { Table, Typography, Select, Space, Descriptions, Input, Tooltip, Tag, Button, Alert, Card } from 'antd'
+import { SearchOutlined } from '@ant-design/icons'
 import { useVulnList } from '@/api/vulns'
 import { useRuleCatalog } from '@/api/rules'
-import StatCards from '@/components/StatCards'
 import RiskTag from '@/components/RiskTag'
 import AuthTag from '@/components/AuthTag'
 import { cvssColor, getRiskOptions } from '@/constants'
@@ -78,7 +77,7 @@ export default function Vulnerabilities() {
       <Space size={[4, 4]} wrap>
         {identifiers.map((identifier) => (
           <Tag color="geekblue" key={identifier.key}>
-            <Typography.Link href={identifier.href} target="_blank">
+            <Typography.Link className="identifier-link" href={identifier.href} target="_blank" rel="noreferrer">
               {identifier.label}
             </Typography.Link>
           </Tag>
@@ -232,7 +231,30 @@ export default function Vulnerabilities() {
 
   return (
     <div>
-      <Typography.Title level={4}>漏洞列表</Typography.Title>
+      <section className="page-hero">
+        <Typography.Text className="page-hero-subtitle">Identifier Mappings and Verification</Typography.Text>
+        <Typography.Title level={2} className="page-hero-title">
+          OpenClaw 漏洞清单
+        </Typography.Title>
+        <Typography.Paragraph className="page-hero-subtitle" style={{ marginBottom: 0 }}>
+          统一展示 CVE、CNNVD、GHSA 三类编号，优先使用本地 PoC 验证结果，版本规则只作为辅助判定依据。
+        </Typography.Paragraph>
+        <div className="hero-chip-row">
+          <div className="hero-chip">
+            <span>漏洞总数</span>
+            <strong>{total}</strong>
+          </div>
+          <div className="hero-chip">
+            <span>严重</span>
+            <strong>{sevStats.critical || 0}</strong>
+          </div>
+          <div className="hero-chip">
+            <span>高危</span>
+            <strong>{sevStats.high || 0}</strong>
+          </div>
+        </div>
+      </section>
+
       {ruleCatalog && (
         <Alert
           style={{ marginBottom: 16 }}
@@ -245,84 +267,93 @@ export default function Vulnerabilities() {
         />
       )}
 
-      <StatCards
-        loading={isLoading}
-        items={[
-          { title: '总漏洞', value: total, prefix: <BugOutlined /> },
-          {
-            title: '严重',
-            value: sevStats.critical || 0,
-            valueStyle: { color: '#f5222d' },
-            prefix: <WarningOutlined />,
-          },
-          { title: '高危', value: sevStats.high || 0, valueStyle: { color: '#fa8c16' } },
-          {
-            title: '中/低危',
-            value: (sevStats.medium || 0) + (sevStats.low || 0) + (sevStats.info || 0),
-            valueStyle: { color: '#52c41a' },
-            prefix: <SafetyCertificateOutlined />,
-          },
-        ]}
-      />
+      <div className="metric-strip">
+        <div className="metric-strip-card">
+          <span className="label">总漏洞</span>
+          <div className="value">{isLoading ? '-' : total}</div>
+        </div>
+        <div className="metric-strip-card">
+          <span className="label">严重</span>
+          <div className="value" style={{ color: 'var(--gs-danger)' }}>
+            {isLoading ? '-' : sevStats.critical || 0}
+          </div>
+        </div>
+        <div className="metric-strip-card">
+          <span className="label">高危</span>
+          <div className="value" style={{ color: 'var(--gs-accent-strong)' }}>
+            {isLoading ? '-' : sevStats.high || 0}
+          </div>
+        </div>
+        <div className="metric-strip-card">
+          <span className="label">中/低危</span>
+          <div className="value" style={{ color: 'var(--gs-success)' }}>
+            {isLoading ? '-' : (sevStats.medium || 0) + (sevStats.low || 0) + (sevStats.info || 0)}
+          </div>
+        </div>
+      </div>
 
-      <Space style={{ marginTop: 16, marginBottom: 16 }} wrap>
-        <Select
-          placeholder="编号类型"
-          allowClear
-          style={{ width: 140 }}
-          value={params.identifier_type || undefined}
-          options={[
-            { label: 'CVE', value: 'cve' },
-            { label: 'CNNVD', value: 'cnnvd' },
-            { label: 'GHSA', value: 'ghsa' },
-          ]}
-          onChange={(value) => setParams({ identifier_type: value ?? '', page: 1 }, { replace: false })}
-        />
-        <Input.Search
-          placeholder={identifierPlaceholder}
-          allowClear
-          style={{ width: 220 }}
-          prefix={<SearchOutlined />}
-          value={searchIdentifier}
-          onChange={(event) => setSearchIdentifier(event.target.value)}
-          onSearch={(value) => setParams({ identifier: value.trim(), page: 1 }, { replace: false })}
-        />
-        <Select
-          placeholder="严重等级"
-          allowClear
-          style={{ width: 140 }}
-          value={params.severity || undefined}
-          options={getRiskOptions()}
-          onChange={(value) => setParams({ severity: value ?? '', page: 1 }, { replace: false })}
-        />
-        <Select
-          placeholder="判定依据"
-          allowClear
-          style={{ width: 160 }}
-          value={params.check_type || undefined}
-          options={getCheckTypeOptions()}
-          onChange={(value) => setParams({ check_type: value ?? '', page: 1 }, { replace: false })}
-        />
-        {hasFilters && <Button onClick={() => resetParams({}, { replace: false })}>清空筛选</Button>}
-      </Space>
+      <Card className="filters-card">
+        <Space wrap>
+          <Select
+            placeholder="编号类型"
+            allowClear
+            style={{ width: 140 }}
+            value={params.identifier_type || undefined}
+            options={[
+              { label: 'CVE', value: 'cve' },
+              { label: 'CNNVD', value: 'cnnvd' },
+              { label: 'GHSA', value: 'ghsa' },
+            ]}
+            onChange={(value) => setParams({ identifier_type: value ?? '', page: 1 }, { replace: false })}
+          />
+          <Input.Search
+            placeholder={identifierPlaceholder}
+            allowClear
+            style={{ width: 240 }}
+            prefix={<SearchOutlined />}
+            value={searchIdentifier}
+            onChange={(event) => setSearchIdentifier(event.target.value)}
+            onSearch={(value) => setParams({ identifier: value.trim(), page: 1 }, { replace: false })}
+          />
+          <Select
+            placeholder="严重等级"
+            allowClear
+            style={{ width: 140 }}
+            value={params.severity || undefined}
+            options={getRiskOptions()}
+            onChange={(value) => setParams({ severity: value ?? '', page: 1 }, { replace: false })}
+          />
+          <Select
+            placeholder="判定依据"
+            allowClear
+            style={{ width: 160 }}
+            value={params.check_type || undefined}
+            options={getCheckTypeOptions()}
+            onChange={(value) => setParams({ check_type: value ?? '', page: 1 }, { replace: false })}
+          />
+          {hasFilters && <Button onClick={() => resetParams({}, { replace: false })}>清空筛选</Button>}
+        </Space>
+      </Card>
 
-      <Table
-        columns={columns}
-        dataSource={vulns}
-        rowKey="id"
-        loading={isLoading}
-        expandable={{ expandedRowRender: expandedRow }}
-        pagination={{
-          current: params.page,
-          pageSize: params.limit,
-          total,
-          showSizeChanger: true,
-          showTotal: (value) => `共 ${value} 条`,
-          onChange: (page, pageSize) => setParams({ page, limit: pageSize }, { replace: false }),
-        }}
-        size="middle"
-        scroll={{ x: 1500 }}
-      />
+      <Card className="surface-card table-card">
+        <Table
+          columns={columns}
+          dataSource={vulns}
+          rowKey="id"
+          loading={isLoading}
+          expandable={{ expandedRowRender: expandedRow }}
+          pagination={{
+            current: params.page,
+            pageSize: params.limit,
+            total,
+            showSizeChanger: true,
+            showTotal: (value) => `共 ${value} 条`,
+            onChange: (page, pageSize) => setParams({ page, limit: pageSize }, { replace: false }),
+          }}
+          size="middle"
+          scroll={{ x: 1500 }}
+        />
+      </Card>
     </div>
   )
 }

@@ -28,6 +28,7 @@ type Manager struct {
 
 	mu      sync.Mutex
 	running map[string]context.CancelFunc
+	execWg  sync.WaitGroup
 }
 
 func NewManager(s store.Store, bus eventbus.EventBus, cfg *config.Config) *Manager {
@@ -76,7 +77,7 @@ func (m *Manager) List(ctx context.Context, filter store.TaskFilter) ([]models.T
 }
 
 func (m *Manager) Delete(ctx context.Context, id string) error {
-	m.Stop(id)
+	_ = m.Stop(ctx, id)
 	return m.store.DeleteTask(ctx, id)
 }
 
@@ -99,6 +100,7 @@ func (m *Manager) Start(ctx context.Context, id string) error {
 
 	taskCtx, cancel := context.WithCancel(context.Background())
 	m.running[id] = cancel
+	m.execWg.Add(1)
 	m.mu.Unlock()
 
 	now := time.Now()
@@ -111,17 +113,116 @@ func (m *Manager) Start(ctx context.Context, id string) error {
 	return nil
 }
 
-func (m *Manager) Stop(id string) {
+func (m *Manager) Stop(ctx context.Context, id string) error {
 	m.mu.Lock()
 	if cancel, ok := m.running[id]; ok {
 		cancel()
 		delete(m.running, id)
+		m.mu.Unlock()
+		return nil
 	}
 	m.mu.Unlock()
+
+	task, err := m.store.GetTask(ctx, id)
+	if err != nil {
+		return err
+	}
+
+	if task.Status != models.TaskStatusRunning && task.Status != models.TaskStatusPending {
+		return nil
+	}
+
+	now := time.Now()
+	task.Status = models.TaskStatusCancelled
+	task.FinishedAt = &now
+	task.ErrorMessage = appendTaskError(task.ErrorMessage, "task was cancelled after the worker state was lost")
+	return m.store.UpdateTask(ctx, task)
+}
+
+func (m *Manager) RecoverInterruptedTasks(ctx context.Context) (int, error) {
+	status := models.TaskStatusRunning
+	tasks, _, err := m.store.ListTasks(ctx, store.TaskFilter{
+		Status: &status,
+		Limit:  10000,
+	})
+	if err != nil {
+		return 0, err
+	}
+
+	recovered := 0
+	now := time.Now()
+	for i := range tasks {
+		tasks[i].Status = models.TaskStatusCancelled
+		tasks[i].FinishedAt = &now
+		tasks[i].ErrorMessage = appendTaskError(tasks[i].ErrorMessage, "task interrupted by service shutdown or restart")
+		if err := m.store.UpdateTask(ctx, &tasks[i]); err != nil {
+			return recovered, err
+		}
+		recovered++
+	}
+
+	return recovered, nil
+}
+
+func (m *Manager) RecalculateAssetRisks(ctx context.Context) (int, error) {
+	assets, _, err := m.store.ListAssets(ctx, store.AssetFilter{Limit: 100000})
+	if err != nil {
+		return 0, err
+	}
+	vulns, _, err := m.store.ListVulnerabilities(ctx, store.VulnFilter{Limit: 100000})
+	if err != nil {
+		return 0, err
+	}
+
+	severitiesByAssetID := make(map[string][]models.Severity)
+	for _, vuln := range vulns {
+		severitiesByAssetID[vuln.AssetID] = append(severitiesByAssetID[vuln.AssetID], vuln.Severity)
+	}
+
+	updated := 0
+	for i := range assets {
+		derived := models.DeriveAssetRisk(assets[i].AuthMode, severitiesByAssetID[assets[i].ID])
+		if assets[i].RiskLevel == derived {
+			continue
+		}
+		assets[i].RiskLevel = derived
+		if err := m.store.UpsertAsset(ctx, &assets[i]); err != nil {
+			return updated, err
+		}
+		updated++
+	}
+
+	return updated, nil
+}
+
+func (m *Manager) Shutdown(ctx context.Context) error {
+	m.mu.Lock()
+	runningIDs := make([]string, 0, len(m.running))
+	for id, cancel := range m.running {
+		cancel()
+		runningIDs = append(runningIDs, id)
+	}
+	m.running = make(map[string]context.CancelFunc)
+	m.mu.Unlock()
+
+	done := make(chan struct{})
+	go func() {
+		m.execWg.Wait()
+		close(done)
+	}()
+
+	select {
+	case <-done:
+		return nil
+	case <-ctx.Done():
+		_ = m.markTasksCancelled(context.Background(), runningIDs, "task interrupted by service shutdown timeout")
+		return ctx.Err()
+	}
 }
 
 func (m *Manager) execute(ctx context.Context, task *models.Task) {
 	log := logger.Named("task_manager")
+	defer m.execWg.Done()
 
 	defer func() {
 		m.mu.Lock()
@@ -210,6 +311,26 @@ func (m *Manager) execute(ctx context.Context, task *models.Task) {
 	})
 }
 
+func (m *Manager) markTasksCancelled(ctx context.Context, taskIDs []string, reason string) error {
+	now := time.Now()
+	for _, id := range taskIDs {
+		task, err := m.store.GetTask(ctx, id)
+		if err != nil {
+			return err
+		}
+		if task.Status != models.TaskStatusRunning && task.Status != models.TaskStatusPending {
+			continue
+		}
+		task.Status = models.TaskStatusCancelled
+		task.FinishedAt = &now
+		task.ErrorMessage = appendTaskError(task.ErrorMessage, reason)
+		if err := m.store.UpdateTask(ctx, task); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
 func (m *Manager) persistPipelineResult(ctx context.Context, taskID string, result *engine.PipelineResult) (int, int, error) {
 	log := logger.Named("task_manager")
 	if result == nil {
@@ -217,6 +338,7 @@ func (m *Manager) persistPipelineResult(ctx context.Context, taskID string, resu
 	}
 
 	assetIDMap := make(map[string]string, len(result.Assets))
+	assetSeverityMap := make(map[string][]models.Severity, len(result.Assets))
 	var persistErrs []error
 	persistedAssets := 0
 
@@ -252,6 +374,7 @@ func (m *Manager) persistPipelineResult(ctx context.Context, taskID string, resu
 		}
 
 		result.Vulnerabilities[i].AssetID = mappedAssetID
+		assetSeverityMap[mappedAssetID] = append(assetSeverityMap[mappedAssetID], result.Vulnerabilities[i].Severity)
 		if err := m.store.CreateVulnerability(ctx, &result.Vulnerabilities[i]); err != nil {
 			log.Error("persist vulnerability failed",
 				zap.String("task_id", taskID),
@@ -264,6 +387,26 @@ func (m *Manager) persistPipelineResult(ctx context.Context, taskID string, resu
 			continue
 		}
 		persistedVulns++
+	}
+
+	for i := range result.Assets {
+		persistedAssetID, ok := assetIDMap[result.Assets[i].ID]
+		if !ok {
+			continue
+		}
+
+		result.Assets[i].ID = persistedAssetID
+		result.Assets[i].RiskLevel = models.DeriveAssetRisk(result.Assets[i].AuthMode, assetSeverityMap[persistedAssetID])
+		if err := m.store.UpsertAsset(ctx, &result.Assets[i]); err != nil {
+			log.Error("update asset risk failed",
+				zap.String("task_id", taskID),
+				zap.String("asset_id", persistedAssetID),
+				zap.String("ip", result.Assets[i].IP),
+				zap.Int("port", result.Assets[i].Port),
+				zap.Error(err),
+			)
+			persistErrs = append(persistErrs, fmt.Errorf("update asset risk %s:%d failed: %w", result.Assets[i].IP, result.Assets[i].Port, err))
+		}
 	}
 
 	return persistedAssets, persistedVulns, errors.Join(persistErrs...)

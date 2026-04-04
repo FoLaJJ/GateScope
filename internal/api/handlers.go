@@ -12,8 +12,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/AutoScan/agentscan/internal/alert"
-	"github.com/AutoScan/agentscan/internal/intel"
 	"github.com/AutoScan/agentscan/internal/models"
 	"github.com/AutoScan/agentscan/internal/report"
 	"github.com/AutoScan/agentscan/internal/scanner/l3"
@@ -330,7 +328,10 @@ func (s *Server) handleStartTask(c *gin.Context) {
 }
 
 func (s *Server) handleStopTask(c *gin.Context) {
-	s.taskMgr.Stop(c.Param("id"))
+	if err := s.taskMgr.Stop(c.Request.Context(), c.Param("id")); err != nil {
+		respondError(c, http.StatusBadRequest, "stop failed", err.Error())
+		return
+	}
 	respondMessage(c, "stopped")
 }
 
@@ -520,125 +521,6 @@ func normalizeIdentifierType(raw string) string {
 	default:
 		return ""
 	}
-}
-
-// --- Alert ---
-
-func (s *Server) handleTestWebhook(c *gin.Context) {
-	if err := s.alertEng.TestWebhook(); err != nil {
-		respondError(c, http.StatusBadRequest, "webhook test failed", err.Error())
-		return
-	}
-	respondMessage(c, "webhook test sent")
-}
-
-func (s *Server) handleGetAlertRules(c *gin.Context) {
-	respondOK(c, gin.H{"data": s.alertEng.GetRules()})
-}
-
-func (s *Server) handleSetAlertRules(c *gin.Context) {
-	var req struct {
-		Rules []alert.AlertRuleDTO `json:"rules"`
-	}
-	if err := c.ShouldBindJSON(&req); err != nil {
-		respondError(c, http.StatusBadRequest, "invalid request", err.Error())
-		return
-	}
-	s.alertEng.SetRules(req.Rules)
-	respondMessage(c, "rules updated")
-}
-
-func (s *Server) handleGetAlertHistory(c *gin.Context) {
-	limit := getIntQuery(c, "limit", 50)
-	records, err := s.alertEng.GetHistory(limit)
-	if err != nil {
-		respondError(c, http.StatusInternalServerError, "list alert history failed", err.Error())
-		return
-	}
-	respondOK(c, gin.H{"data": records})
-}
-
-// --- Intel ---
-
-func (s *Server) handleFOFASearch(c *gin.Context) {
-	var req struct {
-		Query string `json:"query"`
-		Limit int    `json:"limit"`
-	}
-	if err := c.ShouldBindJSON(&req); err != nil {
-		respondError(c, http.StatusBadRequest, "invalid request", err.Error())
-		return
-	}
-	if req.Query == "" {
-		req.Query = intel.DefaultOpenClawQuery()
-	}
-	results, err := s.fofa.Search(req.Query, req.Limit)
-	if err != nil {
-		respondError(c, http.StatusBadRequest, "FOFA search failed", err.Error())
-		return
-	}
-	respondOK(c, gin.H{"data": results, "total": len(results)})
-}
-
-func (s *Server) handleFOFAImport(c *gin.Context) {
-	var req struct {
-		Query    string `json:"query"`
-		Limit    int    `json:"limit"`
-		TaskName string `json:"task_name"`
-	}
-	if err := c.ShouldBindJSON(&req); err != nil {
-		respondError(c, http.StatusBadRequest, "invalid request", err.Error())
-		return
-	}
-	if req.Query == "" {
-		req.Query = intel.DefaultOpenClawQuery()
-	}
-
-	results, err := s.fofa.Search(req.Query, req.Limit)
-	if err != nil {
-		respondError(c, http.StatusBadRequest, "FOFA search failed", err.Error())
-		return
-	}
-	if len(results) == 0 {
-		respondMessage(c, "no results found")
-		return
-	}
-
-	targetSet := make(map[string]bool)
-	for _, r := range results {
-		if r.IP != "" {
-			targetSet[r.IP] = true
-		}
-	}
-	var targets []string
-	for ip := range targetSet {
-		targets = append(targets, ip)
-	}
-
-	taskName := req.TaskName
-	if taskName == "" {
-		taskName = fmt.Sprintf("FOFA Import %s", time.Now().Format("2006-01-02 15:04"))
-	}
-
-	t := &models.Task{
-		Name:        taskName,
-		Description: fmt.Sprintf("Imported from FOFA: %s (%d results)", req.Query, len(results)),
-		Targets:     strings.Join(targets, ","),
-		ScanDepth:   models.ScanDepthL3,
-	}
-
-	if err := s.taskMgr.Create(c.Request.Context(), t); err != nil {
-		respondError(c, http.StatusInternalServerError, "create task failed", err.Error())
-		return
-	}
-
-	go s.taskMgr.Start(context.Background(), t.ID)
-
-	respondCreated(c, gin.H{
-		"task":    t,
-		"targets": len(targets),
-		"message": fmt.Sprintf("Created task with %d unique targets from FOFA", len(targets)),
-	})
 }
 
 // --- Dashboard Trends ---

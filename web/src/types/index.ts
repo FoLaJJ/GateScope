@@ -5,8 +5,6 @@ export type {
   RiskLevel,
   Severity,
   CheckType,
-  AlertEventType,
-  AlertCondition,
   Task,
   TaskTargetStatus,
   TaskEvent,
@@ -16,10 +14,6 @@ export type {
   RuleCatalogMetadata,
   User,
   DashboardStats,
-  AlertRule,
-  AlertRecord,
-  IntelResult,
-  FOFAImportResult,
   TargetImportResult,
 } from './models'
 
@@ -34,8 +28,4 @@ export type {
   TaskListParams,
   AssetListParams,
   VulnListParams,
-  FOFASearchRequest,
-  FOFASearchResponse,
-  FOFAImportRequest,
-  FOFAImportResponse,
 } from './api'

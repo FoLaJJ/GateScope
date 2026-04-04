@@ -75,14 +75,6 @@ type Store interface {
 	// Dashboard
 	GetDashboardStats(ctx context.Context) (*DashboardStats, error)
 
-	// Alert Rules
-	ListAlertRules(ctx context.Context) ([]models.AlertRule, error)
-	SaveAlertRules(ctx context.Context, rules []models.AlertRule) error
-
-	// Alert History
-	CreateAlertRecord(ctx context.Context, record *models.AlertRecord) error
-	ListAlertRecords(ctx context.Context, limit int) ([]models.AlertRecord, error)
-
 	// Lifecycle
 	AutoMigrate() error
 	Close() error

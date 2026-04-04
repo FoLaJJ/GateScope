@@ -44,6 +44,14 @@ export default function TaskDetail() {
     return grouped
   }, [vulns])
 
+  const assetByID = useMemo(() => {
+    const indexed: Record<string, Asset> = {}
+    assets.forEach((asset) => {
+      indexed[asset.id] = asset
+    })
+    return indexed
+  }, [assets])
+
   if (isLoading) return <Spin size="large" style={{ display: 'block', margin: '100px auto' }} />
   if (!task) return <Typography.Text>任务未找到</Typography.Text>
 
@@ -57,7 +65,7 @@ export default function TaskDetail() {
       <Space size={[4, 4]} wrap>
         {identifiers.map((identifier) => (
           <Tag color="geekblue" key={identifier.key}>
-            <a href={identifier.href} target="_blank" rel="noreferrer">
+            <a className="identifier-link" href={identifier.href} target="_blank" rel="noreferrer">
               {identifier.label}
             </a>
           </Tag>
@@ -69,14 +77,6 @@ export default function TaskDetail() {
     ruleCatalog?.cnnvd_count && ruleCatalog.cnnvd_count > 0
       ? `已补录 ${ruleCatalog.cnnvd_count} 条 CNNVD 对应关系，可在漏洞页按编号类型精确筛选。`
       : 'CNNVD 映射链路已支持，但当前仍在持续补录可核实的对应关系。'
-
-  const assetByID = useMemo(() => {
-    const indexed: Record<string, Asset> = {}
-    assets.forEach((asset) => {
-      indexed[asset.id] = asset
-    })
-    return indexed
-  }, [assets])
 
   const targetColumns = [
     { title: '目标', dataIndex: 'target', key: 'target', width: 150 },
@@ -133,7 +133,7 @@ export default function TaskDetail() {
       render: (v?: string) => (v ? <RiskTag level={v} /> : '-'),
     },
     {
-      title: '置信度',
+      title: '识别置信度',
       dataIndex: 'confidence',
       key: 'conf',
       width: 80,
@@ -291,6 +291,30 @@ export default function TaskDetail() {
 
   return (
     <div>
+      <section className="page-hero">
+        <Typography.Text className="page-hero-subtitle">Task Playback and Asset Trace</Typography.Text>
+        <Typography.Title level={2} className="page-hero-title">
+          {task.name}
+        </Typography.Title>
+        <Typography.Paragraph className="page-hero-subtitle" style={{ marginBottom: 0 }}>
+          这里汇总目标状态、资产识别、漏洞命中和事件时间线。未识别 Agent 的目标也会保留在任务详情中，避免扫描结果“消失”。
+        </Typography.Paragraph>
+        <div className="hero-chip-row">
+          <div className="hero-chip">
+            <span>任务状态</span>
+            <strong>{task.status}</strong>
+          </div>
+          <div className="hero-chip">
+            <span>目标总数</span>
+            <strong>{task.total_targets}</strong>
+          </div>
+          <div className="hero-chip">
+            <span>漏洞命中</span>
+            <strong>{task.found_vulns}</strong>
+          </div>
+        </div>
+      </section>
+
       <Space style={{ marginBottom: 16 }}>
         <Link to="/tasks">
           <Button icon={<ArrowLeftOutlined />}>返回列表</Button>
@@ -305,8 +329,8 @@ export default function TaskDetail() {
         )}
       </Space>
 
-      <Card style={{ marginBottom: 16 }}>
-        <Descriptions title={task.name} column={3} bordered size="small">
+      <Card style={{ marginBottom: 16 }} className="surface-card">
+        <Descriptions title="任务详情" column={3} bordered size="small">
           <Descriptions.Item label="状态">
             <StatusBadge status={task.status} />
           </Descriptions.Item>
@@ -345,9 +369,9 @@ export default function TaskDetail() {
       <StatCards
         items={[
           { title: '目标总数', value: task.total_targets },
-          { title: '开放端口', value: task.open_ports, valueStyle: { color: '#1677ff' } },
-          { title: 'Agent实例', value: task.found_agents, valueStyle: { color: '#fa8c16' } },
-          { title: '安全漏洞', value: task.found_vulns, valueStyle: { color: '#f5222d' } },
+          { title: '开放端口', value: task.open_ports, valueStyle: { color: 'var(--gs-primary)' } },
+          { title: 'Agent实例', value: task.found_agents, valueStyle: { color: 'var(--gs-accent)' } },
+          { title: '安全漏洞', value: task.found_vulns, valueStyle: { color: 'var(--gs-danger)' } },
         ]}
       />
 
@@ -358,47 +382,53 @@ export default function TaskDetail() {
             key: 'assets',
             label: `目标状态 (${assetTotal})`,
             children: (
-              <Table
-                columns={targetColumns}
-                dataSource={targetStatuses}
-                rowKey={(record) => record.asset_id || `target-${record.target}-${record.status}`}
-                size="small"
-                pagination={{ pageSize: 10 }}
-                expandable={{ expandedRowRender: renderTargetDetail }}
-                scroll={{ x: 1380 }}
-              />
+              <Card className="surface-card table-card">
+                <Table
+                  columns={targetColumns}
+                  dataSource={targetStatuses}
+                  rowKey={(record) => record.asset_id || `target-${record.target}-${record.status}`}
+                  size="small"
+                  pagination={{ pageSize: 10 }}
+                  expandable={{ expandedRowRender: renderTargetDetail }}
+                  scroll={{ x: 1380 }}
+                />
+              </Card>
             ),
           },
           {
             key: 'vulns',
             label: `漏洞 (${vulnTotal})`,
             children: (
-              <Table
-                columns={vulnColumns}
-                dataSource={vulns}
-                rowKey="id"
-                size="small"
-                pagination={{ pageSize: 10 }}
-                expandable={{ expandedRowRender: renderVulnDetail }}
-                scroll={{ x: 1400 }}
-              />
+              <Card className="surface-card table-card">
+                <Table
+                  columns={vulnColumns}
+                  dataSource={vulns}
+                  rowKey="id"
+                  size="small"
+                  pagination={{ pageSize: 10 }}
+                  expandable={{ expandedRowRender: renderVulnDetail }}
+                  scroll={{ x: 1400 }}
+                />
+              </Card>
             ),
           },
           {
             key: 'events',
             label: `事件 (${eventTotal})`,
             children: (
-              <Timeline
-                items={events.map((e) => ({
-                  color: e.event_type.includes('vuln') ? 'red' : 'blue',
-                  children: (
-                    <>
-                      <Typography.Text type="secondary">{e.event_time}</Typography.Text> <Tag>{e.event_type}</Tag>{' '}
-                      {e.summary}
-                    </>
-                  ),
-                }))}
-              />
+              <Card className="surface-card">
+                <Timeline
+                  items={events.map((e) => ({
+                    color: e.event_type.includes('vuln') ? 'red' : 'blue',
+                    children: (
+                      <>
+                        <Typography.Text type="secondary">{e.event_time}</Typography.Text> <Tag>{e.event_type}</Tag>{' '}
+                        {e.summary}
+                      </>
+                    ),
+                  }))}
+                />
+              </Card>
             ),
           },
         ]}

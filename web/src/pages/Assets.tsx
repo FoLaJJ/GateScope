@@ -99,7 +99,7 @@ export default function Assets() {
       dataIndex: 'agent_type',
       key: 'agent_type',
       width: 120,
-      render: (value: string) => <Typography.Text style={{ color: '#1677ff' }}>{value}</Typography.Text>,
+      render: (value: string) => <Typography.Text style={{ color: 'var(--gs-primary)' }}>{value}</Typography.Text>,
     },
     { title: '版本', dataIndex: 'version', key: 'version', width: 120 },
     {
@@ -117,7 +117,7 @@ export default function Assets() {
       render: (value: string) => <RiskTag level={value} />,
     },
     {
-      title: '置信度',
+      title: '识别置信度',
       dataIndex: 'confidence',
       key: 'confidence',
       width: 90,
@@ -150,14 +150,14 @@ export default function Assets() {
           {
             title: '严重风险',
             value: riskStats.critical || 0,
-            valueStyle: { color: '#f5222d' },
+            valueStyle: { color: 'var(--gs-danger)' },
             prefix: <WarningOutlined />,
           },
-          { title: '高危', value: riskStats.high || 0, valueStyle: { color: '#fa8c16' } },
+          { title: '高危', value: riskStats.high || 0, valueStyle: { color: 'var(--gs-accent)' } },
           {
             title: '安全',
             value: (riskStats.low || 0) + (riskStats.info || 0),
-            valueStyle: { color: '#52c41a' },
+            valueStyle: { color: 'var(--gs-success)' },
             prefix: <SafetyCertificateOutlined />,
           },
         ]}

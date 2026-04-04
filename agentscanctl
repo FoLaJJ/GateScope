@@ -129,11 +129,33 @@ pid_command() {
   ps -p "$pid" -o args= 2>/dev/null | head -n 1
 }
 
+is_agentscan_server_pid() {
+  local pid="$1"
+  local cmd
+  [[ -n "$pid" ]] || return 1
+  is_running "$pid" || return 1
+  cmd="$(pid_command "$pid")"
+  [[ "$cmd" =~ (^|[[:space:]]|/)(agentscan)[[:space:]]+server([[:space:]]|$) ]]
+}
+
 is_managed_pid() {
   local pid="$1"
   [[ -n "$pid" ]] || return 1
   is_running "$pid" || return 1
   [[ "$(pid_command "$pid")" == "$(managed_command)" ]]
+}
+
+find_agentscan_server_pids() {
+  ps -eo pid=,args= 2>/dev/null | awk '
+    {
+      pid = $1
+      $1 = ""
+      sub(/^[[:space:]]+/, "", $0)
+      if ($0 ~ /(^|[[:space:]\/])agentscan[[:space:]]+server([[:space:]]|$)/) {
+        print pid
+      }
+    }
+  '
 }
 
 find_managed_pids() {
@@ -153,6 +175,40 @@ find_managed_pids() {
 
 first_managed_pid() {
   find_managed_pids | head -n 1
+}
+
+port_listener_pids() {
+  local port="$1"
+  ss -ltnp 2>/dev/null | awk -v port="$port" '
+    $1 == "LISTEN" && $4 ~ ":" port "$" {
+      while (match($0, /pid=[0-9]+/)) {
+        print substr($0, RSTART + 4, RLENGTH - 4)
+        $0 = substr($0, RSTART + RLENGTH)
+      }
+    }
+  ' | awk '!seen[$0]++'
+}
+
+find_agentscan_server_pids_on_port() {
+  local port="$1"
+  local pid
+  while read -r pid; do
+    [[ -n "$pid" ]] || continue
+    if is_agentscan_server_pid "$pid"; then
+      echo "$pid"
+    fi
+  done < <(port_listener_pids "$port")
+}
+
+first_agentscan_server_pid_on_port() {
+  local port="$1"
+  find_agentscan_server_pids_on_port "$port" | head -n 1
+}
+
+describe_pid() {
+  local pid="$1"
+  echo "PID: $pid"
+  echo "CMD: $(pid_command "$pid")"
 }
 
 sync_pid_file() {
@@ -296,7 +352,7 @@ EOF
 show_status() {
   load_runtime_values
 
-  local pid_file_pid managed_pid repaired=0
+  local pid_file_pid managed_pid repaired=0 external_pid
   pid_file_pid=""
   if [[ -f "$PID_FILE" ]]; then
     pid_file_pid="$(cat "$PID_FILE" 2>/dev/null || true)"
@@ -320,6 +376,11 @@ show_status() {
     if [[ "$repaired" == "1" ]]; then
       echo "PID file repaired: $PID_FILE"
     fi
+  elif external_pid="$(first_agentscan_server_pid_on_port "$PORT")" && [[ -n "$external_pid" ]]; then
+    echo "Status: running (external instance)"
+    describe_pid "$external_pid"
+    echo "URL: http://$DISPLAY_HOST:$PORT/"
+    echo "Note: this process was started from another checkout, so the local PID file is not authoritative."
   elif [[ -n "$pid_file_pid" ]]; then
     echo "Status: stale pid file"
     echo "PID file: $PID_FILE"
@@ -378,6 +439,11 @@ start_service() {
   PORT_IN_USE="$(port_listener "$PORT")"
   if [[ -n "$PORT_IN_USE" ]]; then
     echo "Port $PORT is already in use. Refusing to start to avoid touching an existing process."
+    EXTERNAL_PID="$(first_agentscan_server_pid_on_port "$PORT" || true)"
+    if [[ -n "${EXTERNAL_PID:-}" ]]; then
+      describe_pid "$EXTERNAL_PID"
+      echo "Note: this is an AgentScan instance started from another checkout."
+    fi
     echo "$PORT_IN_USE"
     return 1
   fi
@@ -410,7 +476,7 @@ start_service() {
 stop_service() {
   load_runtime_values
 
-  local pid_file_pid
+  local pid_file_pid external_pid
   pid_file_pid=""
   if [[ -f "$PID_FILE" ]]; then
     pid_file_pid="$(cat "$PID_FILE" 2>/dev/null || true)"
@@ -418,6 +484,30 @@ stop_service() {
 
   mapfile -t MANAGED_PIDS < <(find_managed_pids)
   if [[ "${#MANAGED_PIDS[@]}" -eq 0 ]]; then
+    mapfile -t EXTERNAL_PIDS < <(find_agentscan_server_pids_on_port "$PORT")
+    if [[ "${#EXTERNAL_PIDS[@]}" -eq 1 ]]; then
+      external_pid="${EXTERNAL_PIDS[0]}"
+      kill "$external_pid"
+      for _ in $(seq 1 20); do
+        if ! is_running "$external_pid"; then
+          rm -f "$PID_FILE"
+          echo "Stopped AgentScan instance on port $PORT."
+          echo "PID: $external_pid"
+          echo "Note: it was started from another checkout, not from $ROOT_DIR."
+          return 0
+        fi
+        sleep 1
+      done
+      echo "AgentScan process on port $PORT did not exit within 20 seconds. No force kill was used."
+      return 1
+    elif [[ "${#EXTERNAL_PIDS[@]}" -gt 1 ]]; then
+      echo "Multiple AgentScan server processes are associated with port $PORT. Refusing to guess."
+      for PID in "${EXTERNAL_PIDS[@]}"; do
+        describe_pid "$PID"
+      done
+      return 1
+    fi
+
     if [[ -f "$PID_FILE" ]]; then
       rm -f "$PID_FILE"
       if [[ -z "$pid_file_pid" ]]; then

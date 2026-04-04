@@ -44,16 +44,26 @@ export default function Login() {
         justifyContent: 'center',
         alignItems: 'center',
         minHeight: '100vh',
-        background: 'linear-gradient(135deg, #0a1628 0%, #1a2a4a 100%)',
+        padding: 24,
+        background: 'linear-gradient(180deg, #f7f9fc 0%, #eef3f8 100%)',
       }}
     >
-      <Card style={{ width: 420, borderRadius: 12 }} variant="borderless">
+      <Card
+        style={{
+          width: 440,
+          borderRadius: 20,
+          border: '1px solid #dbe2ea',
+          background: '#ffffff',
+          boxShadow: '0 18px 40px rgba(15, 23, 42, 0.08)',
+        }}
+        variant="borderless"
+      >
         <Space direction="vertical" size="large" style={{ width: '100%', textAlign: 'center' }}>
-          <SafetyCertificateOutlined style={{ fontSize: 48, color: '#1677ff' }} />
+          <SafetyCertificateOutlined style={{ fontSize: 40, color: 'var(--gs-primary)' }} />
           <Typography.Title level={3} style={{ margin: 0 }}>
             GateScope
           </Typography.Title>
-          <Typography.Text type="secondary">AI Agent 安全审计平台</Typography.Text>
+          <Typography.Text type="secondary">面向 OpenClaw 暴露面的轻量审计控制台</Typography.Text>
         </Space>
         <Alert
           style={{ marginTop: 24 }}

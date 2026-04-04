@@ -54,12 +54,18 @@ mappings:
 - rule_id: CVE-2026-25253
   cve_id: CVE-2026-25253
   cnnvd_id: CNNVD-202602-001
+  ghsa_id: GHSA-g8p2-7wf7-98mq
+- rule_id: CVE-2026-26324
+  cve_id: CVE-2026-26324
+  cnnvd_id: CNNVD-202602-2950
+  ghsa_id: GHSA-jrvc-8ff5-2f9f
 - rule_id: CVE-2026-26327
   cve_id: CVE-2026-26327
   cnnvd_id: CNNVD-202602-2951
 - rule_id: CVE-2026-26972
   cve_id: CVE-2026-26972
   cnnvd_id: CNNVD-202602-3717
+  ghsa_id: GHSA-xwjm-j929-xq7c
 - rule_id: CVE-2026-27009
   cve_id: CVE-2026-27009
   cnnvd_id: CNNVD-202602-3710
@@ -213,6 +219,7 @@ mappings:
 - rule_id: CVE-2026-32024
   cve_id: CVE-2026-32024
   cnnvd_id: CNNVD-202603-3398
+  ghsa_id: GHSA-rx3g-mvc3-qfjf
 - rule_id: CVE-2026-32025
   cve_id: CVE-2026-32025
   cnnvd_id: CNNVD-202603-3397
@@ -339,6 +346,7 @@ mappings:
 - rule_id: CVE-2026-32302
   cve_id: CVE-2026-32302
   cnnvd_id: CNNVD-202603-2634
+  ghsa_id: GHSA-5wcw-8jjv-m286
 - rule_id: CVE-2026-32846
   cve_id: CVE-2026-32846
   cnnvd_id: CNNVD-202603-5370
@@ -489,8 +497,10 @@ mappings:
 - rule_id: CVE-2026-4040
   cve_id: CVE-2026-4040
   cnnvd_id: CNNVD-202603-2423
-- rule_id: GHSA-2f7j-h9x4-jh34
-  ghsa_id: GHSA-2f7j-h9x4-jh34
+- rule_id: GHSA-2f7j-rp58-mr42
+  ghsa_id: GHSA-2f7j-rp58-mr42
+  ghsa_aliases:
+  - GHSA-2f7j-h9x4-jh34
 - rule_id: GHSA-2qrv-rc5x-2g2h
   ghsa_id: GHSA-2qrv-rc5x-2g2h
 - rule_id: GHSA-4p4f-fc8q-84m3
@@ -501,9 +511,13 @@ mappings:
   ghsa_id: GHSA-846p-hgpv-vphc
 - rule_id: GHSA-98ch-45wp-ch47
   ghsa_id: GHSA-98ch-45wp-ch47
-- rule_id: GHSA-9jpj-p5w9-9rfc
-  ghsa_id: GHSA-9jpj-p5w9-9rfc
+- rule_id: GHSA-9jpj-g8vv-j5mf
+  ghsa_id: GHSA-9jpj-g8vv-j5mf
+  ghsa_aliases:
+  - GHSA-9jpj-p5w9-9rfc
 - rule_id: GHSA-jj6q-rrrf-h66h
   ghsa_id: GHSA-jj6q-rrrf-h66h
 - rule_id: GHSA-m34q-h93w-vg5x
   ghsa_id: GHSA-m34q-h93w-vg5x
+- rule_id: GHSA-fvx6-pj3r-5q4q
+  ghsa_id: GHSA-fvx6-pj3r-5q4q

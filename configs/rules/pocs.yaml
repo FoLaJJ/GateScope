@@ -1,22 +1,22 @@
 pocs:
   - id: "ws_origin_bypass"
-    name: "WebSocket Origin Bypass"
-    cve_id: "CVE-2026-25253"
+    name: "Trusted-Proxy WebSocket Origin Bypass"
+    cve_id: "CVE-2026-32302"
     severity: "high"
-    cvss: 8.8
-    remediation: "Upgrade to >= 2026.2.25 or enforce Origin header validation"
-  - id: "path_traversal"
-    name: "Path Traversal via Skill Paths"
-    cve_id: "CVE-2026-26972"
-    severity: "high"
-    cvss: 7.5
-    remediation: "Upgrade to >= 2026.3.2"
+    cvss: 8.1
+    remediation: "Upgrade to >= 2026.3.11 and reject untrusted browser origins when gateway.auth.mode=trusted-proxy"
   - id: "ssrf_proxy"
-    name: "SSRF via Agent Request Proxy"
-    cve_id: "CVE-2026-22234"
+    name: "IPv4-Mapped IPv6 SSRF Guard Bypass"
+    cve_id: "CVE-2026-26324"
     severity: "high"
     cvss: 7.5
-    remediation: "Upgrade to >= 2026.2.14"
+    remediation: "Upgrade to >= 2026.2.14 and block full-form IPv4-mapped IPv6 literals in SSRF guards"
+  - id: "avatar_symlink_traversal"
+    name: "Control UI Avatar Symlink Traversal"
+    cve_id: "CVE-2026-32024"
+    severity: "medium"
+    cvss: 5.5
+    remediation: "Upgrade to >= 2026.2.22 and block avatar symlink escapes outside the workspace boundary"
   - id: "unauth_api"
     name: "Unauthenticated API Access"
     cve_id: ""

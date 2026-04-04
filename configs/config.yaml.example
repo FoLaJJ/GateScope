@@ -30,19 +30,9 @@ auth:
   password: "agentscan"
   token_ttl: "24h"
 
-alert:
-  enabled: false
-  webhook_url: ""
-  webhook_timeout: "10s"
-
 geoip:
   database_path: ""
   license_key: ""
-
-intel:
-  fofa:
-    email: ""
-    api_key: ""
 
 log:
   # level: debug | info | warn | error

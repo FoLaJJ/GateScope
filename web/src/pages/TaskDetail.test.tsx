@@ -1,3 +1,4 @@
+import React, { useEffect, useState } from 'react'
 import { screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { Route, Routes } from 'react-router-dom'
@@ -155,5 +156,65 @@ describe('TaskDetail page', () => {
     expect(screen.getByText('错误: network timeout')).toBeInTheDocument()
     expect(screen.queryByRole('button', { name: /导出报告/ })).not.toBeInTheDocument()
     expect(screen.getByText('未识别 Agent')).toBeInTheDocument()
+  })
+
+  it('keeps hook order stable when task data loads after initial spinner', async () => {
+    let loading = true
+
+    vi.mocked(useTask).mockImplementation(
+      () =>
+        ({
+          data: loading ? undefined : makeTask({ id: 'task-1', name: '延迟加载任务', status: 'running' }),
+          isLoading: loading,
+          refetch: vi.fn(),
+        }) as never,
+    )
+    vi.mocked(useAssetList).mockReturnValue({
+      data: { data: [makeAsset()], total: 1 },
+    } as never)
+    vi.mocked(useTaskTargets).mockReturnValue({
+      data: {
+        data: [],
+        total: 0,
+      },
+    } as never)
+    vi.mocked(useTaskEvents).mockReturnValue({
+      data: { data: [], total: 0 },
+    } as never)
+    vi.mocked(useVulnList).mockReturnValue({
+      data: { data: [], total: 0 },
+    } as never)
+    vi.mocked(useRuleCatalog).mockReturnValue({
+      data: {
+        updated_at: '2026-04-03',
+        source_cutoff: '2026-04-03',
+        rule_count: 12,
+        cve_count: 10,
+        cnnvd_count: 2,
+        ghsa_count: 3,
+        poc_count: 4,
+        consistent: true,
+        issues: [],
+      },
+    } as never)
+
+    function DelayedTaskDetailRoute() {
+      const [, setReady] = useState(false)
+
+      useEffect(() => {
+        loading = false
+        setReady(true)
+      }, [])
+
+      return (
+        <Routes>
+          <Route path="/tasks/:id" element={<TaskDetail />} />
+        </Routes>
+      )
+    }
+
+    renderWithProviders(<DelayedTaskDetailRoute />, '/tasks/task-1')
+
+    expect(await screen.findByText('延迟加载任务')).toBeInTheDocument()
   })
 })

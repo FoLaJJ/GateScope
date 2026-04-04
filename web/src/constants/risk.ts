@@ -1,19 +1,19 @@
 import type { RiskLevel, Severity } from '@/types'
 
 export const RISK_COLORS: Record<RiskLevel, string> = {
-  critical: '#f5222d',
-  high: '#fa8c16',
-  medium: '#fadb14',
-  low: '#52c41a',
-  info: '#1677ff',
+  critical: '#8f3125',
+  high: '#c18b3b',
+  medium: '#d6b164',
+  low: '#6a845e',
+  info: '#ad4d31',
 }
 
 export const RISK_TAG_COLORS: Record<RiskLevel, string> = {
   critical: 'red',
-  high: 'orange',
+  high: 'red',
   medium: 'gold',
   low: 'green',
-  info: 'blue',
+  info: 'green',
 }
 
 export const RISK_LABELS: Record<RiskLevel, string> = {
@@ -35,14 +35,14 @@ export function getRiskOptions() {
 }
 
 export function cvssColor(score: number): string {
-  if (score >= 9) return '#f5222d'
-  if (score >= 7) return '#fa8c16'
-  if (score >= 4) return '#faad14'
-  return '#52c41a'
+  if (score >= 9) return '#8f3125'
+  if (score >= 7) return '#c18b3b'
+  if (score >= 4) return '#d6b164'
+  return '#6a845e'
 }
 
 export function confidenceColor(score: number): string {
-  if (score >= 80) return '#52c41a'
-  if (score >= 50) return '#faad14'
-  return '#ff4d4f'
+  if (score >= 80) return '#6a845e'
+  if (score >= 50) return '#c18b3b'
+  return '#ad4d31'
 }

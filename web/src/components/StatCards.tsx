@@ -21,7 +21,7 @@ export default function StatCards({ items, loading, colSpan = 6, gutter = 16 }: 
     <Row gutter={[gutter, gutter]}>
       {items.map((item, idx) => (
         <Col span={colSpan} xs={12} sm={colSpan} key={idx}>
-          <Card hoverable size="small">
+          <Card size="small" className="metric-stat-card">
             {loading ? (
               <Skeleton active paragraph={false} />
             ) : (

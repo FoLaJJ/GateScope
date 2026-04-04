@@ -8,6 +8,7 @@ import { ErrorBoundary } from '@/components/ErrorBoundary'
 import { queryClient } from '@/api/queryClient'
 import { lightTheme } from '@/theme'
 import App from './App'
+import './styles/app.css'
 
 ReactDOM.createRoot(document.getElementById('root')!).render(
   <React.StrictMode>

@@ -13,9 +13,7 @@ type Config struct {
 	Database DatabaseConfig `yaml:"database" mapstructure:"database"`
 	Scanner  ScannerConfig  `yaml:"scanner"  mapstructure:"scanner"`
 	Auth     AuthConfig     `yaml:"auth"     mapstructure:"auth"`
-	Alert    AlertConfig    `yaml:"alert"    mapstructure:"alert"`
 	GeoIP    GeoIPConfig    `yaml:"geoip"    mapstructure:"geoip"`
-	Intel    IntelConfig    `yaml:"intel"    mapstructure:"intel"`
 	Log      LogConfig      `yaml:"log"      mapstructure:"log"`
 }
 
@@ -49,24 +47,9 @@ type AuthConfig struct {
 	TokenTTL  time.Duration `yaml:"token_ttl"  mapstructure:"token_ttl"`
 }
 
-type AlertConfig struct {
-	WebhookURL     string        `yaml:"webhook_url"     mapstructure:"webhook_url"`
-	WebhookTimeout time.Duration `yaml:"webhook_timeout" mapstructure:"webhook_timeout"`
-	Enabled        bool          `yaml:"enabled"         mapstructure:"enabled"`
-}
-
 type GeoIPConfig struct {
 	DatabasePath string `yaml:"database_path" mapstructure:"database_path"`
 	LicenseKey   string `yaml:"license_key"   mapstructure:"license_key"`
-}
-
-type IntelConfig struct {
-	FOFA FOFAConfig `yaml:"fofa" mapstructure:"fofa"`
-}
-
-type FOFAConfig struct {
-	Email  string `yaml:"email"   mapstructure:"email"`
-	APIKey string `yaml:"api_key" mapstructure:"api_key"`
 }
 
 type LogConfig struct {
@@ -97,9 +80,6 @@ func setDefaults(v *viper.Viper) {
 	v.SetDefault("auth.username", "admin")
 	v.SetDefault("auth.password", "agentscan")
 	v.SetDefault("auth.token_ttl", "24h")
-
-	v.SetDefault("alert.webhook_timeout", "10s")
-	v.SetDefault("alert.enabled", false)
 
 	v.SetDefault("log.level", "info")
 	v.SetDefault("log.format", "console")

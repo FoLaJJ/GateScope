@@ -1,6 +1,5 @@
 import type {
   CheckType,
-  FOFAImportResult,
   RiskLevel,
   Severity,
   TaskStatus,
@@ -71,19 +70,3 @@ export interface VulnListParams extends PaginationParams {
   cve_id?: string
   check_type?: CheckType
 }
-
-export interface FOFASearchRequest {
-  query?: string
-  limit: number
-}
-
-export interface FOFASearchResponse<T> {
-  data: T[]
-  total: number
-}
-
-export interface FOFAImportRequest extends FOFASearchRequest {
-  task_name?: string
-}
-
-export type FOFAImportResponse = FOFAImportResult

@@ -7,16 +7,15 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/AutoScan/agentscan/internal/alert"
 	"github.com/AutoScan/agentscan/internal/auth"
 	"github.com/AutoScan/agentscan/internal/core/config"
 	"github.com/AutoScan/agentscan/internal/core/eventbus"
 	"github.com/AutoScan/agentscan/internal/core/logger"
 	"github.com/AutoScan/agentscan/internal/geoip"
-	"github.com/AutoScan/agentscan/internal/intel"
 	"github.com/AutoScan/agentscan/internal/store"
 	"github.com/AutoScan/agentscan/internal/task"
 	"github.com/gin-gonic/gin"
+	"github.com/google/uuid"
 	"go.uber.org/zap"
 )
 
@@ -27,13 +26,12 @@ type Server struct {
 	auth       *auth.Service
 	taskMgr    *task.Manager
 	scheduler  *task.Scheduler
-	alertEng   *alert.Engine
 	geoSvc     *geoip.Service
-	fofa       *intel.FOFAClient
 	wsHub      *WSHub
 	router     *gin.Engine
 	httpSrv    *http.Server
 	frontendFS fs.FS
+	instanceID string
 }
 
 // NewServer creates a new API server. Pass a non-nil frontendFS (from go:embed)
@@ -42,9 +40,7 @@ func NewServer(cfg *config.Config, s store.Store, bus eventbus.EventBus, fronten
 	authSvc := auth.NewService(s, cfg.Auth)
 	taskMgr := task.NewManager(s, bus, cfg)
 	scheduler := task.NewScheduler(taskMgr, s)
-	alertEng := alert.NewEngine(cfg.Alert.WebhookURL, cfg.Alert.WebhookTimeout, cfg.Alert.Enabled, s)
 	geoSvc := geoip.NewService(cfg.GeoIP.DatabasePath)
-	fofaClient := intel.NewFOFAClient(cfg.Intel.FOFA.Email, cfg.Intel.FOFA.APIKey)
 
 	srv := &Server{
 		cfg:        cfg,
@@ -53,11 +49,10 @@ func NewServer(cfg *config.Config, s store.Store, bus eventbus.EventBus, fronten
 		auth:       authSvc,
 		taskMgr:    taskMgr,
 		scheduler:  scheduler,
-		alertEng:   alertEng,
 		geoSvc:     geoSvc,
-		fofa:       fofaClient,
 		wsHub:      NewWSHub(),
 		frontendFS: frontendFS,
+		instanceID: uuid.NewString(),
 	}
 
 	srv.setupRouter()
@@ -69,6 +64,7 @@ func (s *Server) setupRouter() {
 	r := gin.New()
 	r.Use(gin.Recovery())
 	r.Use(requestIDMiddleware())
+	r.Use(instanceIDMiddleware(s.instanceID))
 	r.Use(accessLogMiddleware())
 	r.Use(corsMiddleware())
 
@@ -102,14 +98,6 @@ func (s *Server) setupRouter() {
 
 			protected.GET("/reports/:taskId/excel", s.handleExportExcel)
 
-			protected.POST("/alert/test", s.handleTestWebhook)
-			protected.GET("/alert/rules", s.handleGetAlertRules)
-			protected.PUT("/alert/rules", s.handleSetAlertRules)
-			protected.GET("/alert/history", s.handleGetAlertHistory)
-
-			protected.POST("/intel/fofa/search", s.handleFOFASearch)
-			protected.POST("/intel/fofa/import", s.handleFOFAImport)
-
 			protected.GET("/dashboard/trends", s.handleDashboardTrends)
 
 			protected.POST("/import/targets", s.handleImportTargets)
@@ -130,8 +118,17 @@ func (s *Server) Start() error {
 	if err := s.auth.EnsureAdminUser(ctx); err != nil {
 		log.Warn("ensure admin user", zap.Error(err))
 	}
+	if recovered, err := s.taskMgr.RecoverInterruptedTasks(ctx); err != nil {
+		log.Warn("recover interrupted tasks", zap.Error(err))
+	} else if recovered > 0 {
+		log.Warn("recovered interrupted tasks", zap.Int("count", recovered))
+	}
+	if updated, err := s.taskMgr.RecalculateAssetRisks(ctx); err != nil {
+		log.Warn("recalculate asset risks", zap.Error(err))
+	} else if updated > 0 {
+		log.Info("recalculated asset risks", zap.Int("count", updated))
+	}
 
-	s.alertEng.RegisterHandlers(s.bus)
 	s.registerWSHandlers()
 
 	if err := s.scheduler.Start(); err != nil {
@@ -155,6 +152,10 @@ func (s *Server) Shutdown(ctx context.Context) error {
 	log.Info("shutting down server")
 
 	s.scheduler.Stop()
+
+	if err := s.taskMgr.Shutdown(ctx); err != nil {
+		log.Warn("task manager shutdown", zap.Error(err))
+	}
 
 	if s.httpSrv != nil {
 		if err := s.httpSrv.Shutdown(ctx); err != nil {

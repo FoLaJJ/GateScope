@@ -2,11 +2,13 @@ package l3
 
 import (
 	"encoding/json"
+	"io"
 	"net"
 	"net/http"
 	"net/http/httptest"
 	"os"
 	"strconv"
+	"strings"
 	"testing"
 	"time"
 
@@ -18,14 +20,16 @@ import (
 type validatorTestServerOptions struct {
 	authMode string
 	wsOK     bool
+	fetchOK  bool
+	avatarOK bool
 }
 
 func TestValidate_PoCSuccessSuppressesVersionDuplicate(t *testing.T) {
 	useRepositoryRules(t)
 
 	ip, port, closeServer := startValidatorTestServer(t, validatorTestServerOptions{
-		authMode: "none",
-		wsOK:     true,
+		authMode: "token_auth",
+		fetchOK:  true,
 	})
 	defer closeServer()
 
@@ -33,7 +37,7 @@ func TestValidate_PoCSuccessSuppressesVersionDuplicate(t *testing.T) {
 		IP:        ip,
 		Port:      port,
 		AgentType: "openclaw",
-		Version:   "2026.2.20",
+		Version:   "2026.2.13",
 		TaskID:    "task-1",
 		AssetID:   "asset-1",
 	}, ValidatorConfig{
@@ -41,9 +45,9 @@ func TestValidate_PoCSuccessSuppressesVersionDuplicate(t *testing.T) {
 		EnablePoC: true,
 	})
 
-	require.True(t, hasMatchedCVE(output.CVEResults, "CVE-2026-25253"))
+	require.True(t, hasMatchedCVE(output.CVEResults, "CVE-2026-26324"))
 
-	hits := vulnerabilitiesByCVE(output, "CVE-2026-25253")
+	hits := vulnerabilitiesByCVE(output, "CVE-2026-26324")
 	require.Len(t, hits, 1)
 	assert.Equal(t, "poc_verify", hits[0].CheckType)
 	assert.Contains(t, hits[0].Title, "[PoC]")
@@ -55,6 +59,7 @@ func TestValidate_FallsBackToVersionMatchWhenPoCFails(t *testing.T) {
 	ip, port, closeServer := startValidatorTestServer(t, validatorTestServerOptions{
 		authMode: "device_auth",
 		wsOK:     false,
+		fetchOK:  false,
 	})
 	defer closeServer()
 
@@ -62,7 +67,7 @@ func TestValidate_FallsBackToVersionMatchWhenPoCFails(t *testing.T) {
 		IP:        ip,
 		Port:      port,
 		AgentType: "openclaw",
-		Version:   "2026.2.20",
+		Version:   "2026.2.13",
 		TaskID:    "task-2",
 		AssetID:   "asset-2",
 	}, ValidatorConfig{
@@ -70,9 +75,9 @@ func TestValidate_FallsBackToVersionMatchWhenPoCFails(t *testing.T) {
 		EnablePoC: true,
 	})
 
-	require.True(t, hasMatchedCVE(output.CVEResults, "CVE-2026-25253"))
+	require.True(t, hasMatchedCVE(output.CVEResults, "CVE-2026-26324"))
 
-	hits := vulnerabilitiesByCVE(output, "CVE-2026-25253")
+	hits := vulnerabilitiesByCVE(output, "CVE-2026-26324")
 	require.Len(t, hits, 1)
 	assert.Equal(t, "cve_match", hits[0].CheckType)
 	assert.NotContains(t, hits[0].Title, "[PoC]")
@@ -97,6 +102,47 @@ func startValidatorTestServer(t *testing.T, opts validatorTestServerOptions) (st
 	mux.HandleFunc("/api/skills", func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
 		_, _ = w.Write([]byte("[]"))
+	})
+
+	mux.HandleFunc("/api/fetch", func(w http.ResponseWriter, r *http.Request) {
+		if !opts.fetchOK {
+			http.NotFound(w, r)
+			return
+		}
+
+		target := r.URL.Query().Get("url")
+		if !strings.Contains(target, "[0:0:0:0:0:ffff:7f00:1]") || !strings.HasSuffix(target, "/health") {
+			http.NotFound(w, r)
+			return
+		}
+
+		resp, err := http.Get("http://127.0.0.1:" + portFromHost(t, r.Host) + "/health")
+		require.NoError(t, err)
+		defer resp.Body.Close()
+		body, err := io.ReadAll(io.LimitReader(resp.Body, 2048))
+		require.NoError(t, err)
+
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(resp.StatusCode)
+		_, _ = w.Write(body)
+	})
+
+	mux.HandleFunc("/__openclaw/control-ui-config.json", func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		_ = json.NewEncoder(w).Encode(map[string]any{
+			"serverVersion":    "2026.2.20",
+			"assistantAgentId": "main",
+			"basePath":         "",
+		})
+	})
+
+	mux.HandleFunc("/avatar/main", func(w http.ResponseWriter, r *http.Request) {
+		if !opts.avatarOK {
+			http.NotFound(w, r)
+			return
+		}
+		w.Header().Set("Content-Type", "image/png")
+		_, _ = w.Write([]byte("root:x:0:0:avatar-secret"))
 	})
 
 	mux.HandleFunc("/ws", func(w http.ResponseWriter, r *http.Request) {
@@ -130,6 +176,14 @@ func startValidatorTestServer(t *testing.T, opts validatorTestServerOptions) (st
 	require.NoError(t, err)
 
 	return host, port, server.Close
+}
+
+func portFromHost(t *testing.T, host string) string {
+	t.Helper()
+
+	_, port, err := net.SplitHostPort(host)
+	require.NoError(t, err)
+	return port
 }
 
 func vulnerabilitiesByCVE(output ValidationOutput, cveID string) []stringVulnerability {

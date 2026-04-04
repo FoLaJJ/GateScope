@@ -22,13 +22,42 @@ func LocalizeVulnerability(vuln models.Vulnerability) models.Vulnerability {
 }
 
 func findOpenClawRuleByIdentifiers(cveID, cnnvdID, ghsaID string) (CVEEntry, bool) {
-	for _, rule := range getOpenClawCVEs() {
+	rules := getOpenClawCVEs()
+
+	if rule, ok := findRuleByAlias(cveID, loadedCVEAliases); ok {
+		return rule, true
+	}
+	if rule, ok := findRuleByAlias(cnnvdID, loadedCNNVDAliases); ok {
+		return rule, true
+	}
+	if rule, ok := findRuleByAlias(ghsaID, loadedGHSAAliases); ok {
+		return rule, true
+	}
+
+	for _, rule := range rules {
 		switch {
 		case cveID != "" && (rule.CVEID == cveID || rule.ID == cveID):
 			return rule, true
 		case cnnvdID != "" && rule.CNNVDID == cnnvdID:
 			return rule, true
 		case ghsaID != "" && (rule.GHSAID == ghsaID || rule.ID == ghsaID):
+			return rule, true
+		}
+	}
+	return CVEEntry{}, false
+}
+
+func findRuleByAlias(identifier string, aliases map[string]string) (CVEEntry, bool) {
+	id := strings.TrimSpace(identifier)
+	if id == "" || len(aliases) == 0 {
+		return CVEEntry{}, false
+	}
+	ruleID, ok := aliases[id]
+	if !ok {
+		return CVEEntry{}, false
+	}
+	for _, rule := range getOpenClawCVEs() {
+		if rule.ID == ruleID {
 			return rule, true
 		}
 	}

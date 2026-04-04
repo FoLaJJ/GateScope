@@ -1,4 +1,4 @@
-import type { AlertRecord, AlertRule, Asset, DashboardStats, IntelResult, Task, Vulnerability } from '@/types'
+import type { Asset, DashboardStats, Task, Vulnerability } from '@/types'
 
 export function makeTask(overrides: Partial<Task> = {}): Task {
   return {
@@ -70,29 +70,6 @@ export function makeVulnerability(overrides: Partial<Vulnerability> = {}): Vulne
   }
 }
 
-export function makeAlertRule(overrides: Partial<AlertRule> = {}): AlertRule {
-  return {
-    name: '严重漏洞',
-    event: 'vuln.detected',
-    condition: 'severity_gte',
-    threshold: 'high',
-    enabled: true,
-    ...overrides,
-  }
-}
-
-export function makeAlertRecord(overrides: Partial<AlertRecord> = {}): AlertRecord {
-  return {
-    id: 'alert-1',
-    event_type: 'vuln.detected',
-    rule_name: '严重漏洞',
-    data: { cve_id: 'CVE-2026-0001', severity: 'critical' },
-    sent: true,
-    created_at: '2026-03-20T10:06:00Z',
-    ...overrides,
-  }
-}
-
 export function makeDashboardStats(overrides: Partial<DashboardStats> = {}): DashboardStats {
   return {
     total_tasks: 12,
@@ -104,21 +81,6 @@ export function makeDashboardStats(overrides: Partial<DashboardStats> = {}): Das
     recent_tasks: [],
     recent_vulns: [],
     auth_distribution: {},
-    ...overrides,
-  }
-}
-
-export function makeIntelResult(overrides: Partial<IntelResult> = {}): IntelResult {
-  return {
-    ip: '8.8.8.8',
-    port: 443,
-    protocol: 'https',
-    host: 'example.com',
-    title: 'OpenClaw',
-    banner: 'banner',
-    country: 'US',
-    city: 'Mountain View',
-    source: 'fofa',
     ...overrides,
   }
 }

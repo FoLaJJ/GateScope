@@ -43,10 +43,13 @@ type cveRulesFile struct {
 }
 
 type ruleIDMapping struct {
-	RuleID  string `yaml:"rule_id"`
-	CVEID   string `yaml:"cve_id"`
-	CNNVDID string `yaml:"cnnvd_id"`
-	GHSAID  string `yaml:"ghsa_id"`
+	RuleID       string   `yaml:"rule_id"`
+	CVEID        string   `yaml:"cve_id"`
+	CNNVDID      string   `yaml:"cnnvd_id"`
+	GHSAID       string   `yaml:"ghsa_id"`
+	CVEAliases   []string `yaml:"cve_aliases"`
+	CNNVDAliases []string `yaml:"cnnvd_aliases"`
+	GHSAAliases  []string `yaml:"ghsa_aliases"`
 }
 
 type idMappingsFile struct {
@@ -70,6 +73,9 @@ var (
 	loadedPoCRules             []PoCRule
 	loadedRulesMeta            rulesMeta
 	loadedRuleIssues           []string
+	loadedCVEAliases           map[string]string
+	loadedCNNVDAliases         map[string]string
+	loadedGHSAAliases          map[string]string
 )
 
 type RuleCatalogMetadata struct {
@@ -158,6 +164,9 @@ func loadRules() {
 	loadedPoCRules = nil
 	loadedRulesMeta = rulesMeta{}
 	loadedRuleIssues = nil
+	loadedCVEAliases = map[string]string{}
+	loadedCNNVDAliases = map[string]string{}
+	loadedGHSAAliases = map[string]string{}
 
 	var cveFile cveRulesFile
 	if err := readRulesFile("openclaw-cves.yaml", &cveFile); err == nil && len(cveFile.CVEs) > 0 {
@@ -232,7 +241,26 @@ func applyIDMappings() {
 
 		if !applied {
 			loadedRuleIssues = append(loadedRuleIssues, "id mapping references missing rule "+ruleID)
+			continue
 		}
+
+		registerIdentifierAliases(ruleID, "cve_alias", mapping.CVEAliases, loadedCVEAliases)
+		registerIdentifierAliases(ruleID, "cnnvd_alias", mapping.CNNVDAliases, loadedCNNVDAliases)
+		registerIdentifierAliases(ruleID, "ghsa_alias", mapping.GHSAAliases, loadedGHSAAliases)
+	}
+}
+
+func registerIdentifierAliases(ruleID, field string, aliases []string, dst map[string]string) {
+	for _, alias := range aliases {
+		value := strings.TrimSpace(alias)
+		if value == "" {
+			continue
+		}
+		if prevRuleID, ok := dst[value]; ok && prevRuleID != ruleID {
+			loadedRuleIssues = append(loadedRuleIssues, field+" "+value+" is mapped to multiple rules: "+prevRuleID+", "+ruleID)
+			continue
+		}
+		dst[value] = ruleID
 	}
 }
 
@@ -401,4 +429,7 @@ func resetLoadedRulesForTests() {
 	loadedPoCRules = nil
 	loadedRulesMeta = rulesMeta{}
 	loadedRuleIssues = nil
+	loadedCVEAliases = nil
+	loadedCNNVDAliases = nil
+	loadedGHSAAliases = nil
 }

@@ -381,45 +381,6 @@ func (s *gormStore) CreateUser(ctx context.Context, user *models.User) error {
 	})
 }
 
-// ---------- Alert Rules ----------
-
-func (s *gormStore) ListAlertRules(ctx context.Context) ([]models.AlertRule, error) {
-	var rules []models.AlertRule
-	err := s.db.WithContext(ctx).Order("created_at ASC").Find(&rules).Error
-	return rules, err
-}
-
-func (s *gormStore) SaveAlertRules(ctx context.Context, rules []models.AlertRule) error {
-	return s.withWriteSession(ctx, func(db *gorm.DB) error {
-		return db.Transaction(func(tx *gorm.DB) error {
-			if err := tx.Where("1 = 1").Delete(&models.AlertRule{}).Error; err != nil {
-				return err
-			}
-			if len(rules) == 0 {
-				return nil
-			}
-			return tx.Create(&rules).Error
-		})
-	})
-}
-
-// ---------- Alert Records ----------
-
-func (s *gormStore) CreateAlertRecord(ctx context.Context, record *models.AlertRecord) error {
-	return s.withWriteSession(ctx, func(db *gorm.DB) error {
-		return db.Create(record).Error
-	})
-}
-
-func (s *gormStore) ListAlertRecords(ctx context.Context, limit int) ([]models.AlertRecord, error) {
-	if limit <= 0 {
-		limit = 50
-	}
-	var records []models.AlertRecord
-	err := s.db.WithContext(ctx).Order("created_at DESC").Limit(limit).Find(&records).Error
-	return records, err
-}
-
 func (s *gormStore) withWriteSession(ctx context.Context, fn func(db *gorm.DB) error) error {
 	if s.isSQLite {
 		s.writeMu.Lock()

@@ -1,3 +1,5 @@
+import { API_INSTANCE_HEADER, processRuntimeInstance } from '@/runtime/instance'
+
 const API_BASE = '/api/v1'
 
 let navigateToLogin: (() => void) | null = null
@@ -83,6 +85,7 @@ export async function request<T>(path: string, options?: RequestInit): Promise<T
   }
 
   const resp = await fetch(`${API_BASE}${path}`, { ...options, headers })
+  processRuntimeInstance(resp.headers?.get?.(API_INSTANCE_HEADER) ?? null)
 
   if (resp.status === 401) {
     localStorage.removeItem('token')
@@ -108,6 +111,7 @@ export async function downloadFile(path: string, filename: string): Promise<void
   const resp = await fetch(`${API_BASE}${path}`, {
     headers: token ? { Authorization: `Bearer ${token}` } : {},
   })
+  processRuntimeInstance(resp.headers?.get?.(API_INSTANCE_HEADER) ?? null)
   if (!resp.ok) throw new ApiError(resp.status, 'DOWNLOAD_FAILED', 'Download failed')
   const blob = await resp.blob()
   const url = URL.createObjectURL(blob)

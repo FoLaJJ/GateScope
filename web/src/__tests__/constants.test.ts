@@ -26,17 +26,25 @@ describe('risk constants', () => {
     expect(options[0]).toEqual({ label: '严重', value: 'critical' })
   })
 
+  it('risk tag colors use red/yellow/green tiers', () => {
+    expect(RISK_TAG_COLORS.critical).toBe('red')
+    expect(RISK_TAG_COLORS.high).toBe('red')
+    expect(RISK_TAG_COLORS.medium).toBe('gold')
+    expect(RISK_TAG_COLORS.low).toBe('green')
+    expect(RISK_TAG_COLORS.info).toBe('green')
+  })
+
   it('cvssColor returns correct colors', () => {
-    expect(cvssColor(9.5)).toBe('#f5222d')
-    expect(cvssColor(7.5)).toBe('#fa8c16')
-    expect(cvssColor(5.0)).toBe('#faad14')
-    expect(cvssColor(2.0)).toBe('#52c41a')
+    expect(cvssColor(9.5)).toBe('#8f3125')
+    expect(cvssColor(7.5)).toBe('#c18b3b')
+    expect(cvssColor(5.0)).toBe('#d6b164')
+    expect(cvssColor(2.0)).toBe('#6a845e')
   })
 
   it('confidenceColor returns correct colors', () => {
-    expect(confidenceColor(90)).toBe('#52c41a')
-    expect(confidenceColor(60)).toBe('#faad14')
-    expect(confidenceColor(30)).toBe('#ff4d4f')
+    expect(confidenceColor(90)).toBe('#6a845e')
+    expect(confidenceColor(60)).toBe('#c18b3b')
+    expect(confidenceColor(30)).toBe('#ad4d31')
   })
 })
 

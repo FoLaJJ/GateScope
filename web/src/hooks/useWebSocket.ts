@@ -1,15 +1,18 @@
 import { useEffect, useRef, useCallback } from 'react'
 import type { WSMessage } from '@/types'
+import { notifyWSReconnected } from '@/runtime/instance'
 
 type Listener = (msg: WSMessage) => void
 
 interface WSState {
   ws: WebSocket | null
   listeners: Set<Listener>
+  connectTimer: ReturnType<typeof setTimeout> | null
   reconnectTimer: ReturnType<typeof setTimeout> | null
   heartbeatTimer: ReturnType<typeof setInterval> | null
   reconnectDelay: number
   intentionalClose: boolean
+  hasConnectedOnce: boolean
 }
 
 const MIN_RECONNECT = 1000
@@ -19,19 +22,25 @@ const HEARTBEAT_INTERVAL = 25000
 const state: WSState = {
   ws: null,
   listeners: new Set(),
+  connectTimer: null,
   reconnectTimer: null,
   heartbeatTimer: null,
   reconnectDelay: MIN_RECONNECT,
   intentionalClose: false,
+  hasConnectedOnce: false,
 }
 
-function getWSUrl(): string {
+function getWSUrl(): string | null {
+  const token = localStorage.getItem('token')
+  if (!token) {
+    return null
+  }
+
   const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:'
   const host = window.location.host
   const wsPath = '/api/v1/ws'
-  const token = localStorage.getItem('token')
   const url = `${protocol}//${host}${wsPath}`
-  return token ? `${url}?token=${encodeURIComponent(token)}` : url
+  return `${url}?token=${encodeURIComponent(token)}`
 }
 
 function startHeartbeat() {
@@ -50,16 +59,33 @@ function stopHeartbeat() {
   }
 }
 
+function clearConnectTimer() {
+  if (state.connectTimer) {
+    clearTimeout(state.connectTimer)
+    state.connectTimer = null
+  }
+}
+
 function connect() {
   if (state.ws?.readyState === WebSocket.OPEN || state.ws?.readyState === WebSocket.CONNECTING) {
     return
   }
 
-  const ws = new WebSocket(getWSUrl())
+  const wsUrl = getWSUrl()
+  if (!wsUrl) {
+    return
+  }
+
+  const ws = new WebSocket(wsUrl)
 
   ws.onopen = () => {
+    const isReconnect = state.hasConnectedOnce
+    state.hasConnectedOnce = true
     state.reconnectDelay = MIN_RECONNECT
     startHeartbeat()
+    if (isReconnect) {
+      notifyWSReconnected()
+    }
   }
 
   ws.onmessage = (event) => {
@@ -83,8 +109,9 @@ function connect() {
     state.ws = null
     if (!state.intentionalClose && state.listeners.size > 0) {
       state.reconnectTimer = setTimeout(() => {
+        state.reconnectTimer = null
         state.reconnectDelay = Math.min(state.reconnectDelay * 2, MAX_RECONNECT)
-        connect()
+        scheduleConnect()
       }, state.reconnectDelay)
     }
   }
@@ -96,8 +123,23 @@ function connect() {
   state.ws = ws
 }
 
+function scheduleConnect(delay = 0) {
+  if (state.listeners.size === 0 || state.intentionalClose) {
+    return
+  }
+  if (state.ws?.readyState === WebSocket.OPEN || state.ws?.readyState === WebSocket.CONNECTING || state.connectTimer) {
+    return
+  }
+
+  state.connectTimer = setTimeout(() => {
+    state.connectTimer = null
+    connect()
+  }, delay)
+}
+
 function disconnect() {
   state.intentionalClose = true
+  clearConnectTimer()
   if (state.reconnectTimer) {
     clearTimeout(state.reconnectTimer)
     state.reconnectTimer = null
@@ -112,7 +154,7 @@ function subscribe(listener: Listener): () => void {
   if (state.listeners.size === 1) {
     state.intentionalClose = false
     state.reconnectDelay = MIN_RECONNECT
-    connect()
+    scheduleConnect()
   }
   return () => {
     state.listeners.delete(listener)

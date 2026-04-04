@@ -165,3 +165,91 @@ cves:
 	})
 	assert.Equal(t, "中文演示描述", vuln.DescriptionZH)
 }
+
+func TestLocalizeVulnerability_ResolvesIdentifierAliasesFromMappings(t *testing.T) {
+	tmp := t.TempDir()
+	rulesDir := filepath.Join(tmp, "rules")
+	require.NoError(t, os.MkdirAll(rulesDir, 0o755))
+
+	require.NoError(t, os.WriteFile(filepath.Join(rulesDir, "openclaw-cves.yaml"), []byte(`
+meta:
+  updated_at: "2026-04-03"
+cves:
+  - id: "GHSA-new-0001"
+    title: "canonical rule"
+    severity: "medium"
+    cvss: 5.3
+    affected_before: "2026.4.2"
+    description: "english demo"
+    description_zh: "别名中文描述"
+    remediation: "upgrade"
+`), 0o644))
+	require.NoError(t, os.WriteFile(filepath.Join(rulesDir, "openclaw-id-mappings.yaml"), []byte(`
+mappings:
+  - rule_id: "GHSA-new-0001"
+    ghsa_id: "GHSA-new-0001"
+    ghsa_aliases:
+      - "GHSA-old-0001"
+`), 0o644))
+	require.NoError(t, os.WriteFile(filepath.Join(rulesDir, "skills.yaml"), []byte("known_malicious: []\nsuspicious_indicators: []\n"), 0o644))
+	require.NoError(t, os.WriteFile(filepath.Join(rulesDir, "pocs.yaml"), []byte("pocs: []\n"), 0o644))
+
+	prevDir := os.Getenv("AGENTSCAN_RULES_DIR")
+	require.NoError(t, os.Setenv("AGENTSCAN_RULES_DIR", rulesDir))
+	defer func() {
+		if prevDir == "" {
+			_ = os.Unsetenv("AGENTSCAN_RULES_DIR")
+		} else {
+			_ = os.Setenv("AGENTSCAN_RULES_DIR", prevDir)
+		}
+		resetLoadedRulesForTests()
+	}()
+
+	resetLoadedRulesForTests()
+
+	vuln := LocalizeVulnerability(models.Vulnerability{
+		GHSAID:       "GHSA-old-0001",
+		Description:  "english demo",
+		DescriptionZH: "",
+	})
+	assert.Equal(t, "别名中文描述", vuln.DescriptionZH)
+}
+
+func TestRepositoryPoCRules_AreBoundToCanonicalIdentifiers(t *testing.T) {
+	useRepositoryRules(t)
+
+	pocs := getPoCRules()
+	require.NotEmpty(t, pocs)
+
+	byID := make(map[string]PoCRule, len(pocs))
+	for _, rule := range pocs {
+		byID[rule.ID] = rule
+	}
+
+	wsRule, ok := byID["ws_origin_bypass"]
+	require.True(t, ok)
+	assert.Equal(t, "CVE-2026-32302", wsRule.CVEID)
+	assert.Equal(t, "CNNVD-202603-2634", wsRule.CNNVDID)
+	assert.Equal(t, "GHSA-5wcw-8jjv-m286", wsRule.GHSAID)
+	assert.Equal(t, "high", wsRule.Severity)
+	assert.Equal(t, 8.1, wsRule.CVSS)
+
+	ssrfRule, ok := byID["ssrf_proxy"]
+	require.True(t, ok)
+	assert.Equal(t, "CVE-2026-26324", ssrfRule.CVEID)
+	assert.Equal(t, "CNNVD-202602-2950", ssrfRule.CNNVDID)
+	assert.Equal(t, "GHSA-jrvc-8ff5-2f9f", ssrfRule.GHSAID)
+	assert.Equal(t, "high", ssrfRule.Severity)
+	assert.Equal(t, 7.5, ssrfRule.CVSS)
+
+	avatarRule, ok := byID["avatar_symlink_traversal"]
+	require.True(t, ok)
+	assert.Equal(t, "CVE-2026-32024", avatarRule.CVEID)
+	assert.Equal(t, "CNNVD-202603-3398", avatarRule.CNNVDID)
+	assert.Equal(t, "GHSA-rx3g-mvc3-qfjf", avatarRule.GHSAID)
+	assert.Equal(t, "medium", avatarRule.Severity)
+	assert.Equal(t, 5.5, avatarRule.CVSS)
+
+	_, hasLegacyTraversalPoC := byID["path_traversal"]
+	assert.False(t, hasLegacyTraversalPoC, "legacy skills path traversal PoC should not be advertised under the wrong CVE")
+}

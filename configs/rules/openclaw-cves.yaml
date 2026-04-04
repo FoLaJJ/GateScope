@@ -7,85 +7,94 @@ meta:
 cves:
 - id: GHSA-846p-hgpv-vphc
   ghsa_id: GHSA-846p-hgpv-vphc
-  title: QQ Bot structured payloads could trigger unintended mention and card actions
-  severity: low
-  cvss: 3.7
+  title: QQ Bot structured payloads could read arbitrary local files
+  severity: high
+  cvss: 8.6
   affected_before: 2026.4.2
-  description: When QQ bot integrations are enabled, structured payload fields can trigger unintended mentions or card actions because inbound content is not normalized strictly enough.
-  remediation: Upgrade to >= 2026.4.2 and disable unused QQ bot integrations
-  description_zh: 该漏洞与“QQ Bot structured payloads could trigger unintended mention and card actions”相关。受影响版本为 2026.4.2 之前。成功利用后会对 OpenClaw 的认证、授权、沙箱隔离或运行安全造成影响。
+  description: Before OpenClaw 2026.4.2, QQ Bot structured media payloads could read local files from attacker-chosen paths and escape QQ Bot-owned media roots.
+  remediation: Upgrade to >= 2026.4.2 and restrict QQ Bot media handling to trusted roots
+  description_zh: 在 OpenClaw 2026.4.2 之前，QQ Bot 的结构化媒体载荷可使用攻击者控制的路径读取本地文件，并逃逸 QQ Bot 预期的媒体根目录限制。
 - id: GHSA-m34q-h93w-vg5x
   ghsa_id: GHSA-m34q-h93w-vg5x
-  title: Slack extractions could fall back to unauthenticated file fetch
+  title: OpenShell mirror mode could delete arbitrary remote directories when roots were mis-scoped
+  severity: high
+  cvss: 8.6
+  affected_before: 2026.4.2
+  description: Before OpenClaw 2026.4.2, the OpenShell mirror backend accepted arbitrary absolute remoteWorkspaceDir and remoteAgentWorkspaceDir values, allowing remote cleanup and overwrite operations against unintended directories.
+  remediation: Upgrade to >= 2026.4.2 and reject arbitrary absolute remote workspace paths in mirror mode
+  description_zh: 在 OpenClaw 2026.4.2 之前，OpenShell mirror 后端接受任意绝对路径形式的 remoteWorkspaceDir 和 remoteAgentWorkspaceDir，可能对非预期远程目录执行清理和覆盖操作。
+- id: GHSA-98ch-45wp-ch47
+  ghsa_id: GHSA-98ch-45wp-ch47
+  title: Windows-compatible env override keys could bypass system.run approval binding
   severity: medium
   cvss: 5.3
   affected_before: 2026.4.2
-  description: Slack extraction flows can fall back to an unauthenticated file fetch path, exposing the deployment to unintended remote file retrieval when Slack integration is enabled.
-  remediation: Upgrade to >= 2026.4.2 and review Slack connector exposure
-  description_zh: 该漏洞与“Slack extractions could fall back to unauthenticated file fetch”相关。受影响版本为 2026.4.2 之前。成功利用后会对 OpenClaw 的认证、授权、沙箱隔离或运行安全造成影响。
-- id: GHSA-98ch-45wp-ch47
-  ghsa_id: GHSA-98ch-45wp-ch47
-  title: Image links in message tool alias URLs could expose local files
-  severity: medium
-  cvss: 5.8
-  affected_before: 2026.4.2
-  description: Alias URLs supplied to image-capable message tools can resolve to unintended local files when alias validation is incomplete.
-  remediation: Upgrade to >= 2026.4.2 and restrict alias URL handling to approved roots
-  description_zh: 该漏洞与“Image links in message tool alias URLs could expose local files”相关。受影响版本为 2026.4.2 之前。成功利用后会对 OpenClaw 的认证、授权、沙箱隔离或运行安全造成影响。
-- id: GHSA-2f7j-h9x4-jh34
-  ghsa_id: GHSA-2f7j-h9x4-jh34
-  title: Excessive user sessions could allocate unbounded memory during startup
+  description: Before OpenClaw 2026.4.2, system-run approval binding normalized environment override keys differently from host execution, allowing Windows-compatible keys to bypass approval binding and still be injected at execution time.
+  remediation: Upgrade to >= 2026.4.2 and align env override normalization between approval binding and execution
+  description_zh: 在 OpenClaw 2026.4.2 之前，system.run 审批绑定和实际主机执行对环境变量覆盖键的规范化方式不一致，导致兼容 Windows 的键名可能绕过审批绑定后仍在执行时注入。
+- id: GHSA-2f7j-rp58-mr42
+  ghsa_id: GHSA-2f7j-rp58-mr42
+  title: Gateway hello snapshots exposed host config and state paths to non-admin clients
   severity: low
   cvss: 3.7
   affected_before: 2026.4.2
-  description: Large numbers of persisted user sessions can trigger unbounded memory allocation during startup and degrade availability.
-  remediation: Upgrade to >= 2026.4.2 and trim excessive historical sessions
-  description_zh: 该漏洞与“Excessive user sessions could allocate unbounded memory during startup”相关。受影响版本为 2026.4.2 之前。成功利用后可能导致拒绝服务、资源耗尽或稳定性下降。
+  description: Before OpenClaw 2026.4.2, the Gateway connect success snapshot exposed local configPath and stateDir metadata to non-admin clients, leaking host filesystem layout and deployment details.
+  remediation: Upgrade to >= 2026.4.2 and limit Gateway hello snapshots to role-appropriate metadata
+  description_zh: 在 OpenClaw 2026.4.2 之前，Gateway 连接成功快照会向非管理员客户端暴露本地 configPath 和 stateDir 元数据，泄露主机文件系统布局和部署细节。
 - id: GHSA-2qrv-rc5x-2g2h
   ghsa_id: GHSA-2qrv-rc5x-2g2h
-  title: WhatsApp bridge could trust crafted quoted stanza fields in group replies
+  title: Untrusted workspace channel shadows could execute during built-in channel setup
   severity: medium
   cvss: 5.3
   affected_before: 2026.4.2
-  description: When WhatsApp bridge features are enabled, crafted quoted stanza metadata in group replies can be treated as trusted context and influence downstream handling.
-  remediation: Upgrade to >= 2026.4.2 and disable unused WhatsApp bridge routes
-  description_zh: 该漏洞与“WhatsApp bridge could trust crafted quoted stanza fields in group replies”相关。受影响版本为 2026.4.2 之前。成功利用后会对 OpenClaw 的认证、授权、沙箱隔离或运行安全造成影响。
+  description: Before OpenClaw 2026.4.2, built-in channel setup and login could resolve an untrusted workspace channel shadow before the plugin was explicitly trusted, allowing malicious plugin code to execute during setup.
+  remediation: Upgrade to >= 2026.4.2 and require explicit trust before resolving workspace channel shadows
+  description_zh: 在 OpenClaw 2026.4.2 之前，内置 channel 的初始化和登录流程可能在插件被显式信任前解析工作区中的同名 shadow channel，导致恶意插件代码在配置阶段执行。
 - id: GHSA-5hff-46vh-rxmw
   ghsa_id: GHSA-5hff-46vh-rxmw
-  title: iOS bridge could accept attachment downloads without revalidating sender trust
-  severity: high
-  cvss: 8.6
-  affected_before: 2026.4.2
-  description: The iOS bridge can download attachments before fully revalidating sender trust, which may allow unauthorized content retrieval and storage activity.
-  remediation: Upgrade to >= 2026.4.2 and review iOS bridge attachment workflows
-  description_zh: 该漏洞与“iOS bridge could accept attachment downloads without revalidating sender trust”相关。受影响版本为 2026.4.2 之前。成功利用后会对 OpenClaw 的认证、授权、沙箱隔离或运行安全造成影响。
-- id: GHSA-9jpj-p5w9-9rfc
-  ghsa_id: GHSA-9jpj-p5w9-9rfc
-  title: Shared-secret auth could leak validity via timing differences
-  severity: medium
-  cvss: 5.9
-  affected_before: 2026.4.2
-  description: Shared-secret authentication paths can leak whether a secret is valid through measurable timing differences, increasing brute-force feasibility.
-  remediation: Upgrade to >= 2026.4.2 and rotate weak shared secrets
-  description_zh: 该漏洞与“Shared-secret auth could leak validity via timing differences”相关。受影响版本为 2026.4.2 之前。成功利用后可能导致敏感信息、凭证或内部状态泄露。
-- id: GHSA-4p4f-fc8q-84m3
-  ghsa_id: GHSA-4p4f-fc8q-84m3
-  title: Mail pipeline could invoke SMTP server when webhook auth is disabled
+  title: Read-scoped identity-bearing HTTP clients could kill sessions via /sessions/:sessionKey/kill
   severity: medium
   cvss: 5.3
   affected_before: 2026.4.2
-  description: If webhook authentication is disabled, the mail pipeline can still invoke SMTP handling paths and trigger unintended outbound mail activity.
-  remediation: Upgrade to >= 2026.4.2 and keep webhook authentication enabled
-  description_zh: 该漏洞与“Mail pipeline could invoke SMTP server when webhook auth is disabled”相关。受影响版本为 2026.4.2 之前。成功利用后会对 OpenClaw 的认证、授权、沙箱隔离或运行安全造成影响。
+  description: Before OpenClaw 2026.4.2, POST /sessions/:sessionKey/kill did not enforce write scopes in identity-bearing HTTP modes, allowing read-only operators to terminate running subagent sessions.
+  remediation: Upgrade to >= 2026.4.2 and enforce write scopes on session termination routes
+  description_zh: 在 OpenClaw 2026.4.2 之前，身份承载式 HTTP 模式下的 POST /sessions/:sessionKey/kill 未校验写权限，导致仅具备只读权限的操作者也能终止运行中的子代理会话。
+- id: GHSA-9jpj-g8vv-j5mf
+  ghsa_id: GHSA-9jpj-g8vv-j5mf
+  title: Gemini OAuth exposed the PKCE verifier through the OAuth state parameter
+  severity: medium
+  cvss: 5.3
+  affected_before: 2026.4.2
+  description: Before OpenClaw 2026.4.2, the Gemini OAuth flow reused the PKCE verifier as the OAuth state value, exposing the verifier alongside the authorization code in the redirect URL.
+  remediation: Upgrade to >= 2026.4.2 and use a distinct unpredictable state value for Gemini OAuth flows
+  description_zh: 在 OpenClaw 2026.4.2 之前，Gemini OAuth 流程把 PKCE verifier 直接复用于 OAuth state 参数，导致其可能随着重定向 URL 一并泄露。
+- id: GHSA-4p4f-fc8q-84m3
+  ghsa_id: GHSA-4p4f-fc8q-84m3
+  title: iOS A2UI bridge trusted generic local-network pages for agent.request dispatch
+  severity: medium
+  cvss: 5.3
+  affected_before: 2026.4.2
+  description: Before OpenClaw 2026.4.2, the iOS A2UI bridge treated generic local-network pages as trusted bridge origins, allowing pages on local-network or tailnet hosts to trigger agent.request dispatch.
+  remediation: Upgrade to >= 2026.4.2 and restrict agent.request dispatch to trusted canvas origins only
+  description_zh: 在 OpenClaw 2026.4.2 之前，iOS A2UI bridge 会把普通局域网或 tailnet 页面视为受信任来源，从而允许这些页面触发 agent.request 分发。
 - id: GHSA-jj6q-rrrf-h66h
   ghsa_id: GHSA-jj6q-rrrf-h66h
-  title: Telegram sender allowlist matching could resolve dynamic usernames
-  severity: high
-  cvss: 8.6
+  title: Shared-secret comparison call sites leaked length information through timing
+  severity: low
+  cvss: 3.7
   affected_before: 2026.4.2
-  description: Telegram sender allowlist checks can resolve mutable usernames instead of stable identifiers, allowing authorization decisions to drift unexpectedly.
-  remediation: Upgrade to >= 2026.4.2 and prefer stable Telegram identifiers in allowlists
-  description_zh: 该漏洞与“Telegram sender allowlist matching could resolve dynamic usernames”相关。受影响版本为 2026.4.2 之前。成功利用后会对 OpenClaw 的认证、授权、沙箱隔离或运行安全造成影响。
+  description: Before OpenClaw 2026.4.2, several shared-secret comparison call sites still used early length-mismatch checks instead of a fixed-length helper, leaking secret-length information through timing differences.
+  remediation: Upgrade to >= 2026.4.2 and use fixed-length shared-secret comparison helpers consistently
+  description_zh: 在 OpenClaw 2026.4.2 之前，多个 shared-secret 比较点仍使用长度不一致即提前返回的逻辑，而非固定长度比较助手，可能通过时序差异泄露密钥长度信息。
+- id: GHSA-fvx6-pj3r-5q4q
+  ghsa_id: GHSA-fvx6-pj3r-5q4q
+  title: Complex interpreter pipelines could skip exec script preflight validation
+  severity: medium
+  cvss: 5.3
+  affected_before: 2026.4.2
+  description: Before OpenClaw 2026.4.2, exec script preflight validation could fail open on complex interpreter invocations such as pipes or other non-simple command forms, skipping script-content validation entirely.
+  remediation: Upgrade to >= 2026.4.2 and enforce exec preflight validation for complex interpreter invocations
+  description_zh: 在 OpenClaw 2026.4.2 之前，复杂解释器调用形式如管道或其他非简单命令可能导致 exec 脚本预检失败后仍继续执行，从而跳过脚本内容校验。
 - id: CVE-2026-27009
   title: Stored XSS in Control UI Assistant Identity Rendering
   severity: medium
@@ -319,21 +328,29 @@ cves:
   remediation: Upgrade to >= 2026.3.11
   description_zh: 该漏洞与“Exec Allowlist Pattern Overmatch”相关。受影响版本为 2026.3.11 之前。成功利用后可能导致命令注入或任意代码执行。
 - id: CVE-2026-25253
-  title: 'ClawJacked: WebSocket Hijack to RCE'
+  title: Query-string gatewayUrl auto-connect leaks operator token
   severity: high
   cvss: 8.8
-  affected_before: 2026.2.25
-  description: Malicious websites can hijack local OpenClaw Gateway via WebSocket without Origin validation, enabling brute-force of auth token and full agent takeover.
-  remediation: Upgrade to >= 2026.2.25
-  description_zh: '该漏洞与“ClawJacked: WebSocket Hijack to RCE”相关。受影响版本为 2026.2.25 之前。成功利用后可能导致身份伪造、请求重放或认证被暴力猜解。'
-- id: CVE-2026-26972
-  title: Path Traversal via crafted skill paths
+  affected_before: 2026.1.29
+  description: OpenClaw before 2026.1.29 accepted a gatewayUrl value from a query string and auto-connected to it over WebSocket, sending a token value without prompting the operator.
+  remediation: Upgrade to >= 2026.1.29 and block automatic WebSocket bootstrap from untrusted query-string gatewayUrl values
+  description_zh: OpenClaw 在 2026.1.29 之前会从查询字符串读取 gatewayUrl 并自动建立 WebSocket 连接，过程中会在未提示操作者的情况下发送令牌，可能导致会话令牌泄露和后续接管。
+- id: CVE-2026-26324
+  title: SSRF guard bypass via full-form IPv4-mapped IPv6 literals
   severity: high
   cvss: 7.5
-  affected_before: 2026.3.2
-  description: Crafted skill installation path allows reading arbitrary files outside the skills directory.
-  remediation: Upgrade to >= 2026.3.2
-  description_zh: 该漏洞与“Path Traversal via crafted skill paths”相关。受影响版本为 2026.3.2 之前。成功利用后可能导致目录遍历、越权读写或沙箱边界突破。
+  affected_before: 2026.2.14
+  description: OpenClaw before 2026.2.14 could bypass SSRF protections with full-form IPv4-mapped IPv6 literals such as 0:0:0:0:0:ffff:7f00:1, allowing requests to loopback, private-network, or link-local metadata targets that should have been blocked.
+  remediation: Upgrade to >= 2026.2.14 and reject full-form IPv4-mapped IPv6 literals in SSRF target validation
+  description_zh: OpenClaw 在 2026.2.14 之前对全写形式的 IPv4 映射 IPv6 地址校验不严，例如 0:0:0:0:0:ffff:7f00:1，可绕过 SSRF 防护访问回环、内网或链路本地元数据地址。
+- id: CVE-2026-26972
+  title: Browser download helpers accepted unsanitized output paths
+  severity: medium
+  cvss: 6.7
+  affected_before: 2026.2.13
+  description: In OpenClaw 2026.1.12 through 2026.2.12, browser download helpers accepted unsanitized output paths. When invoked through browser control gateway routes, attackers with authenticated CLI access or an authenticated gateway RPC token could write downloads outside the intended temporary download directory.
+  remediation: Upgrade to >= 2026.2.13 and sanitize browser download helper output paths
+  description_zh: OpenClaw 2026.1.12 至 2026.2.12 的浏览器下载辅助逻辑接受未净化的输出路径；在已获得 CLI 认证或网关 RPC 令牌的条件下，可借此把下载内容写到临时下载目录之外。
 - id: CVE-2026-28470
   title: Exec Whitelist Bypass
   severity: critical
@@ -1153,7 +1170,7 @@ cves:
 - id: CVE-2026-32024
   title: OpenClaw 后置链接漏洞
   severity: medium
-  cvss: 7.5
+  cvss: 5.5
   affected_before: 2026.2.22
   description: OpenClaw versions prior to 2026.2.22 contain a symlink traversal vulnerability in avatar handling that allows attackers to read arbitrary files outside the configured workspace boundary. Remote attackers can exploit this by requesting avatar resources through gateway surfaces to disclose local files accessible to the OpenClaw process.
   remediation: Upgrade to >= 2026.2.22
@@ -1175,13 +1192,13 @@ cves:
   remediation: Upgrade to >= 2026.2.24
   description_zh: 该漏洞与“OpenClaw 路径遍历漏洞”相关。受影响版本为 2026.2.24 之前。成功利用后会对 OpenClaw 的认证、授权、沙箱隔离或运行安全造成影响。
 - id: CVE-2026-32302
-  title: OpenClaw 访问控制错误漏洞
-  severity: medium
+  title: Trusted-proxy mode could bypass WebSocket origin validation
+  severity: high
   cvss: 8.1
   affected_before: 2026.3.11
   description: OpenClaw is a personal AI assistant. Prior to 2026.3.11, browser-originated WebSocket connections could bypass origin validation when gateway.auth.mode was set to trusted-proxy and the request arrived with proxy headers. A page served from an untrusted origin could connect through a trusted reverse proxy, inherit proxy-authenticated identity, and establish a privileged operator session. This vulnerability is fixed in 2026.3.11.
   remediation: Upgrade to >= 2026.3.11
-  description_zh: 该漏洞与“OpenClaw 访问控制错误漏洞”相关。受影响版本为 2026.3.11 之前。成功利用后会对 OpenClaw 的认证、授权、沙箱隔离或运行安全造成影响。
+  description_zh: OpenClaw 在 2026.3.11 之前，当 gateway.auth.mode 配置为 trusted-proxy 且请求携带代理头时，浏览器来源的 WebSocket 连接可绕过来源校验，使不受信任页面经由反向代理继承代理认证身份并建立高权限会话。
 - id: CVE-2026-32022
   title: OpenClaw 安全漏洞
   severity: medium

@@ -35,17 +35,17 @@
 
 - 当前规则更新时间：`2026-04-03`
 - 上游核对截止：`2026-04-03`
-- 当前 OpenClaw 版本规则：`176`
+- 当前 OpenClaw 版本规则：`177`
 - 当前其中 CVE 规则：`167`
-- 当前其中 GHSA 规则：`9`
+- 当前其中 GHSA 规则：`10`
 - 当前其中 CNNVD 规则：`161`（已合并 155 条 2026 年 3 月 CNNVD OpenClaw 批量映射，并保留此前已核实的历史映射）
 - 当前本地 PoC 规则：`4`
-- 相比上游当前内置的 `7` 条 OpenClaw CVE，当前 fork 已扩展到 `176` 条版本规则，净增 `169` 条
+- 相比上游当前内置的 `7` 条 OpenClaw CVE，当前 fork 已扩展到 `177` 条版本规则，净增 `170` 条
 
 当前版本规则严重等级分布：
 - `critical`: `16`
 - `high`: `62`
-- `medium`: `84`
+- `medium`: `85`
 - `low`: `14`
 
 规则文件位置：
@@ -65,35 +65,53 @@
 
 ## 页面展示
 
+当前登录页（2026-04-04，简化后的新版配色与一键登录入口）：
+
+![GateScope Login Current](docs/screenshots/login-current.png)
+
 ## 本次新增的官方漏洞
 
-- 在原有 `9` 条 `GHSA` 官方规则基础上，本轮继续补齐 `131` 条基于 `NVD + CNNVD OpenClaw 批量清单` 的版本规则，重点覆盖 `CVE-2026-320xx`、`CVE-2026-329xx`、`CVE-2026-221xx`、`CVE-2026-275xx`、`CVE-2026-328xx`、`CVE-2026-345xx` 等批次。
+- 在原有 `10` 条 `GHSA` 官方规则基础上，本轮继续补齐 `131` 条基于 `NVD + CNNVD OpenClaw 批量清单` 的版本规则，重点覆盖 `CVE-2026-320xx`、`CVE-2026-329xx`、`CVE-2026-221xx`、`CVE-2026-275xx`、`CVE-2026-328xx`、`CVE-2026-345xx` 等批次。
 - 新增批次里包含大量此前页面完全看不到的 `访问控制错误`、`路径遍历`、`操作系统命令注入`、`代码问题`、`信息泄露`、`日志信息泄露`、`跨站脚本`、`参数注入`、`后置链接`、`竞争条件问题` 漏洞。
 - 这批规则全部走 `configs/rules/openclaw-cves.yaml + configs/rules/openclaw-id-mappings.yaml` 外置维护，不再把 CNNVD/CVE 映射写死在程序里。
 
-- `GHSA-846p-hgpv-vphc`：QQ Bot 结构化载荷可触发非预期 mention/card 动作，修复版本 `>= 2026.4.2`
-- `GHSA-m34q-h93w-vg5x`：Slack 提取流程可能回退到未鉴权文件抓取，修复版本 `>= 2026.4.2`
-- `GHSA-98ch-45wp-ch47`：消息工具 alias URL 的图片链接可能暴露本地文件，修复版本 `>= 2026.4.2`
-- `GHSA-2f7j-h9x4-jh34`：大量用户会话可在启动阶段触发无界内存分配，修复版本 `>= 2026.4.2`
-- `GHSA-2qrv-rc5x-2g2h`：WhatsApp bridge 可能信任伪造 quoted stanza 字段，修复版本 `>= 2026.4.2`
-- `GHSA-5hff-46vh-rxmw`：iOS bridge 在未重新校验发送者信任前接受附件下载，修复版本 `>= 2026.4.2`
-- `GHSA-9jpj-p5w9-9rfc`：shared-secret 鉴权存在时序差异泄露，修复版本 `>= 2026.4.2`
-- `GHSA-4p4f-fc8q-84m3`：关闭 webhook 鉴权时邮件流水线仍可能调用 SMTP，修复版本 `>= 2026.4.2`
-- `GHSA-jj6q-rrrf-h66h`：Telegram 发送者 allowlist 可能解析动态用户名，修复版本 `>= 2026.4.2`
+- `GHSA-846p-hgpv-vphc`：QQ Bot 结构化媒体载荷可读取任意本地文件，修复版本 `>= 2026.4.2`
+- `GHSA-m34q-h93w-vg5x`：OpenShell mirror 模式在根路径配置失当时可删除任意远程目录，修复版本 `>= 2026.4.2`
+- `GHSA-98ch-45wp-ch47`：兼容 Windows 的环境变量覆盖键可绕过 `system.run` 审批绑定，修复版本 `>= 2026.4.2`
+- `GHSA-2f7j-rp58-mr42`：Gateway hello 快照向非管理员泄露主机配置和状态目录路径，修复版本 `>= 2026.4.2`
+- `GHSA-2qrv-rc5x-2g2h`：未受信任的工作区 channel shadow 可在内置 channel 初始化时执行，修复版本 `>= 2026.4.2`
+- `GHSA-5hff-46vh-rxmw`：只读权限的身份承载式 HTTP 客户端仍可调用会话终止接口，修复版本 `>= 2026.4.2`
+- `GHSA-9jpj-g8vv-j5mf`：Gemini OAuth 会通过 `state` 参数泄露 PKCE verifier，修复版本 `>= 2026.4.2`
+- `GHSA-4p4f-fc8q-84m3`：iOS A2UI bridge 错信任局域网页面并触发 `agent.request`，修复版本 `>= 2026.4.2`
+- `GHSA-jj6q-rrrf-h66h`：shared-secret 比较路径存在长度时序泄露，修复版本 `>= 2026.4.2`
+- `GHSA-fvx6-pj3r-5q4q`：复杂解释器管道可绕过 exec 脚本预检，修复版本 `>= 2026.4.2`
 
 ## 这次实现还改了什么
 
 - 漏洞规则从“代码内置兜底”改成“YAML 唯一事实源”，避免以后每次补规则都改程序
-- 新增 131 条基于 NVD OpenClaw 记录生成的版本规则，当前规则库总量提升到 176 条
+- 新增 131 条基于 NVD OpenClaw 记录生成的版本规则，并补齐 1 条遗漏的官方 GHSA，当前规则库总量提升到 177 条
 - `configs/rules/openclaw-id-mappings.yaml` 已合并 155 条 CNNVD 批量映射，页面和导出可直接渲染多编号
 - 规则 schema 扩展出 `CNNVD/GHSA` 字段，PoC 命中时也会继承对应外部编号
-- 176 条 OpenClaw 版本规则已全部补齐 `description_zh`，漏洞详情页、任务详情页和 Excel 报告会同时展示中英文描述
+- 177 条 OpenClaw 版本规则已全部补齐 `description_zh`，漏洞详情页、任务详情页和 Excel 报告会同时展示中英文描述
+- 新增 `scripts/verify_openclaw_ghsa.py`，可直接对照 OpenClaw GitHub 官方 advisories 校验本地 GHSA-only 规则编号和标题是否失真
+- 新增 `scripts/verify_openclaw_poc_mappings.py`，可直接对照 NVD 在线元数据校验本地 4 条 PoC 规则关联的 `CVE/GHSA/严重等级/CVSS/修复版本` 是否一致
+- 新增 `scripts/repair_vulnerability_catalog.py`，可按当前 YAML 规则库批量修复数据库内历史漏洞记录的 `CVE/CNNVD/GHSA/标题/等级/中文描述`
 - 漏洞列表、任务详情、Dashboard 最近漏洞、Excel 报告都能展示 `CVE/CNNVD/GHSA`
 - 规则元数据新增总规则数、`CVE/CNNVD/GHSA/PoC` 分项统计
 - 漏洞页新增编号类型选择，可按 `CVE/CNNVD/GHSA` 精确筛选
 - 修复 SQLite 并发写入导致的“任务统计有 Agent，但 `assets` 表少记录”问题；SQLite 模式现在强制单连接、`busy_timeout` 和 `WAL`
 - 新增资产持久化保护：`UpsertAsset` 命中旧资产时会回写真实资产 ID，漏洞入库前会同步重映射，避免产生孤儿漏洞
 - 新增 `007` 数据修复迁移：会从 `task_events` 的 `agent.identified` 事件里自动回填历史漏写资产，并把原来失联的漏洞重新挂回资产
+- 前端导航收敛为 `态势大屏 / 扫描任务 / 资产管理 / 漏洞清单` 四个主视图，移除告警中心和情报中心，页面结构更直接
+- 新增 `web/public/favicon.svg`，浏览器标签页会显示 GateScope 的站点图标
+- `agentscanctl` 的 `status/start/stop/reset-db` 不再只信任当前目录的 PID 文件；会额外识别目标端口上的 `agentscan server` 进程，能区分“本 checkout 管理实例”和“其他 checkout 启动的实例”
+- 后端启动时会先执行中断任务恢复和历史资产风险回算；异常退出留下的运行中任务会被自动标记为中断取消，旧资产风险会按“认证暴露基线 + 该资产最高漏洞等级取最大值”重新修正
+- 前端 API 增加 `X-GateScope-Instance` 运行实例标识联动；后端实例变化时会主动 `resetQueries`，WebSocket 重连后会统一 `invalidateQueries`，减少 `reset-db` 或服务重启后页面残留旧缓存
+- WebSocket 客户端补充心跳、指数退避重连和重连后的全局刷新联动，首次点开任务详情页时的连接稳定性更好
+- 任务详情页把依赖数据的 hooks 固定放在加载态判断之前，修复首次查看详情时偶发的前端报错
+- 风险和严重等级颜色统一成三层级口径：`critical/high` 使用红色，`medium` 使用黄色，`low/info` 使用绿色；态势大屏中的“资产风险分布”按红/绿两档聚合展示，“漏洞严重等级”和资产/漏洞标签保持一致
+- 页面文案里的“置信度”统一明确为“识别置信度”，避免与漏洞验证置信度混淆
+- 默认扫描端口集统一补入 `18790`，配置模板、CLI 默认参数、后端扫描管线和前端新建任务表单保持一致
 
 登录页：
 

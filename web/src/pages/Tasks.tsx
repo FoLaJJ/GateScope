@@ -136,7 +136,7 @@ export default function Tasks() {
       width: 200,
       render: (value: string, record: Task) => (
         <Link to={`/tasks/${record.id}`}>
-          <Typography.Text strong style={{ color: '#1677ff' }}>
+          <Typography.Text strong style={{ color: 'var(--gs-primary)' }}>
             {value}
           </Typography.Text>
         </Link>
@@ -185,7 +185,8 @@ export default function Tasks() {
       key: 'found_agents',
       width: 70,
       align: 'right',
-      render: (value: number) => (value > 0 ? <Typography.Text style={{ color: '#1677ff' }}>{value}</Typography.Text> : '-'),
+      render: (value: number) =>
+        value > 0 ? <Typography.Text style={{ color: 'var(--gs-primary)' }}>{value}</Typography.Text> : '-',
     },
     {
       title: '漏洞',
@@ -265,16 +266,35 @@ export default function Tasks() {
 
   return (
     <div>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
-        <Typography.Title level={4} style={{ margin: 0 }}>
+      <section className="page-hero">
+        <Typography.Text className="page-hero-subtitle">Execution Board</Typography.Text>
+        <Typography.Title level={2} className="page-hero-title">
           扫描任务
         </Typography.Title>
-        <Space>
-          <Typography.Text type="secondary">{total} 个任务</Typography.Text>
-          <Button type="primary" icon={<PlusOutlined />} onClick={() => setModalOpen(true)}>
-            新建任务
-          </Button>
-        </Space>
+        <Typography.Paragraph className="page-hero-subtitle" style={{ marginBottom: 0 }}>
+          从这里发起内网或公网 OpenClaw 暴露面扫描。留空端口时会使用统一默认端口集，包含 18790。
+        </Typography.Paragraph>
+        <div className="hero-chip-row">
+          <div className="hero-chip">
+            <span>任务总数</span>
+            <strong>{total}</strong>
+          </div>
+          <div className="hero-chip">
+            <span>默认端口</span>
+            <strong>18789 / 18790 / 18792</strong>
+          </div>
+          <div className="hero-chip">
+            <span>执行方式</span>
+            <strong>即时 / 定时</strong>
+          </div>
+        </div>
+      </section>
+
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
+        <Typography.Text type="secondary">{total} 个任务</Typography.Text>
+        <Button type="primary" icon={<PlusOutlined />} onClick={() => setModalOpen(true)}>
+          新建任务
+        </Button>
       </div>
 
       <Space style={{ marginBottom: 16 }} wrap>
@@ -296,22 +316,24 @@ export default function Tasks() {
         )}
       </Space>
 
-      <Table
-        columns={columns}
-        dataSource={tasks}
-        rowKey="id"
-        loading={isLoading}
-        pagination={{
-          current: params.page,
-          pageSize: params.limit,
-          total,
-          showSizeChanger: true,
-          showTotal: (value) => `共 ${value} 条`,
-          onChange: (page, pageSize) => setParams({ page, limit: pageSize }, { replace: false }),
-        }}
-        size="middle"
-        scroll={{ x: 1360 }}
-      />
+      <div className="surface-card" style={{ padding: 8, borderRadius: 24 }}>
+        <Table
+          columns={columns}
+          dataSource={tasks}
+          rowKey="id"
+          loading={isLoading}
+          pagination={{
+            current: params.page,
+            pageSize: params.limit,
+            total,
+            showSizeChanger: true,
+            showTotal: (value) => `共 ${value} 条`,
+            onChange: (page, pageSize) => setParams({ page, limit: pageSize }, { replace: false }),
+          }}
+          size="middle"
+          scroll={{ x: 1360 }}
+        />
+      </div>
 
       <Modal
         title="新建扫描任务"

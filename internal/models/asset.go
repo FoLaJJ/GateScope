@@ -104,3 +104,57 @@ func RiskFromAuthMode(authMode string) RiskLevel {
 		return RiskMedium
 	}
 }
+
+func RiskFromSeverity(severity Severity) RiskLevel {
+	switch severity {
+	case SeverityCritical:
+		return RiskCritical
+	case SeverityHigh:
+		return RiskHigh
+	case SeverityMedium:
+		return RiskMedium
+	case SeverityLow:
+		return RiskLow
+	case SeverityInfo:
+		return RiskInfo
+	default:
+		return RiskInfo
+	}
+}
+
+func MaxRiskLevel(levels ...RiskLevel) RiskLevel {
+	maxLevel := RiskInfo
+	maxRank := riskLevelRank(maxLevel)
+	for _, level := range levels {
+		if rank := riskLevelRank(level); rank > maxRank {
+			maxLevel = level
+			maxRank = rank
+		}
+	}
+	return maxLevel
+}
+
+func DeriveAssetRisk(authMode string, severities []Severity) RiskLevel {
+	derived := RiskFromAuthMode(authMode)
+	for _, severity := range severities {
+		derived = MaxRiskLevel(derived, RiskFromSeverity(severity))
+	}
+	return derived
+}
+
+func riskLevelRank(level RiskLevel) int {
+	switch level {
+	case RiskCritical:
+		return 5
+	case RiskHigh:
+		return 4
+	case RiskMedium:
+		return 3
+	case RiskLow:
+		return 2
+	case RiskInfo:
+		return 1
+	default:
+		return 0
+	}
+}
