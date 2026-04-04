@@ -1,8 +1,8 @@
 {
-  "name": "gatescope-web",
+  "name": "clawscan-web",
   "version": "0.4.0",
   "private": true,
-  "description": "GateScope web console for AI Agent exposure discovery and OpenClaw vulnerability auditing",
+  "description": "ClawScan web console for OpenClaw exposure scanning and vulnerability verification",
   "type": "module",
   "scripts": {
     "dev": "vite",

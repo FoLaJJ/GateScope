@@ -1,8 +1,8 @@
-export const API_INSTANCE_HEADER = 'X-GateScope-Instance'
-export const INSTANCE_CHANGED_EVENT = 'gatescope:instance-changed'
-export const WS_RECONNECTED_EVENT = 'gatescope:ws-reconnected'
+export const API_INSTANCE_HEADER = 'X-ClawScan-Instance'
+export const INSTANCE_CHANGED_EVENT = 'clawscan:instance-changed'
+export const WS_RECONNECTED_EVENT = 'clawscan:ws-reconnected'
 
-const STORAGE_KEY = 'gatescope.instance'
+const STORAGE_KEY = 'clawscan.instance'
 
 let currentInstance = readStoredInstance()
 

@@ -1,4 +1,4 @@
-# GateScope
+# ClawScan
 
 [English](README.en.md)
 
@@ -57,10 +57,10 @@
 - 新增资产持久化保护：`UpsertAsset` 命中旧资产时会回写真实资产 ID，漏洞入库前会同步重映射，避免产生孤儿漏洞。
 - 新增 `007` 数据修复迁移：会从 `task_events` 的 `agent.identified` 事件里自动回填历史漏写资产，并把原来失联的漏洞重新挂回资产。
 - 前端导航收敛为 `态势大屏 / 扫描任务 / 资产管理 / 漏洞清单` 四个主视图，移除告警中心和情报中心，页面结构更直接。
-- 新增 `web/public/favicon.svg`，浏览器标签页会显示 GateScope 的站点图标。
+- 新增 `web/public/favicon.svg`，浏览器标签页会显示 ClawScan 的站点图标。
 - `agentscanctl` 的 `status/start/stop/reset-db` 不再只信任当前目录的 PID 文件；会额外识别目标端口上的 `agentscan server` 进程，能区分“本 checkout 管理实例”和“其他 checkout 启动的实例”。
 - 后端启动时会先执行中断任务恢复和历史资产风险回算；异常退出留下的运行中任务会被自动标记为中断取消，旧资产风险会按“认证暴露基线 + 该资产最高漏洞等级取最大值”重新修正。
-- 前端 API 增加 `X-GateScope-Instance` 运行实例标识联动；后端实例变化时会主动 `resetQueries`，WebSocket 重连后会统一 `invalidateQueries`，减少 `reset-db` 或服务重启后页面残留旧缓存。
+- 前端 API 增加 `X-ClawScan-Instance` 运行实例标识联动；后端实例变化时会主动 `resetQueries`，WebSocket 重连后会统一 `invalidateQueries`，减少 `reset-db` 或服务重启后页面残留旧缓存。
 - WebSocket 客户端补充心跳、指数退避重连和重连后的全局刷新联动，首次点开任务详情页时的连接稳定性更好。
 - 任务详情页把依赖数据的 hooks 固定放在加载态判断之前，修复首次查看详情时偶发的前端报错。
 - 任务详情页移除了路由懒加载，避免服务重启或前端资源更新后首次点击详情时再额外拉取旧 chunk 而触发错误边界。
@@ -174,15 +174,15 @@
 
 当前登录页：
 
-![GateScope Login Current](./docs/screenshots/login-current-headless.png)
+![ClawScan Login Current](./docs/screenshots/login-current-headless.png)
 
 当前漏洞中心页：
 
-![GateScope Vulnerability Center Current](./docs/screenshots/vulnerability-center-current.png)
+![ClawScan Vulnerability Center Current](./docs/screenshots/vulnerability-center-current.png)
 
 当前资产管理页：
 
-![GateScope Assets Current](./docs/screenshots/assets-current.png)
+![ClawScan Assets Current](./docs/screenshots/assets-current.png)
 
 ## 一键运行
 

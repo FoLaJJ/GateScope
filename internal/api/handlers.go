@@ -465,7 +465,7 @@ func (s *Server) handleExportExcel(c *gin.Context) {
 		return
 	}
 
-	filename := fmt.Sprintf("GateScope_Report_%s_%s.xlsx", t.Name, time.Now().Format("20060102"))
+	filename := fmt.Sprintf("ClawScan_Report_%s_%s.xlsx", t.Name, time.Now().Format("20060102"))
 	c.Header("Content-Disposition", buildDownloadDisposition(filename))
 	c.Header("Content-Type", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
 	f.Write(c.Writer)
@@ -630,8 +630,8 @@ func (s *Server) serveFrontend() gin.HandlerFunc {
 
 var fallbackHTML = `<!DOCTYPE html>
 <html lang="zh-CN">
-<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>GateScope</title></head>
-<body><div id="root"><h2 style="text-align:center;margin-top:100px">GateScope API Server Running</h2><p style="text-align:center">Frontend not embedded. Build with: cd web && npm run build && go build</p></div></body>
+<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>ClawScan</title></head>
+<body><div id="root"><h2 style="text-align:center;margin-top:100px">ClawScan API Server Running</h2><p style="text-align:center">Frontend not embedded. Build with: cd web && npm run build && go build</p></div></body>
 </html>`
 
 func getIntQuery(c *gin.Context, key string, def int) int {

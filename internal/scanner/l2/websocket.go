@@ -209,7 +209,7 @@ func (p *WSProber) sendConnectRequest(conn *websocket.Conn, nonce string) connec
 
 	connectReq := map[string]any{
 		"type":   "req",
-		"id":     "gatescope-probe-001",
+		"id":     "clawscan-probe-001",
 		"method": "connect",
 		"params": map[string]any{
 			"minProtocol": 3,
@@ -219,13 +219,13 @@ func (p *WSProber) sendConnectRequest(conn *websocket.Conn, nonce string) connec
 				"version":    "0.4.0",
 				"platform":   platform,
 				"mode":       clientMode,
-				"instanceId": fmt.Sprintf("gatescope-%d", signedAt),
+				"instanceId": fmt.Sprintf("clawscan-%d", signedAt),
 			},
 			"role":      role,
 			"scopes":    scopes,
 			"caps":      []string{},
 			"locale":    "en",
-			"userAgent": "GateScope/0.4.0",
+			"userAgent": "ClawScan/0.4.0",
 			"device": map[string]any{
 				"id":        deviceId,
 				"publicKey": pubKeyB64,

@@ -61,7 +61,7 @@ export default function Login() {
         <Space direction="vertical" size="large" style={{ width: '100%', textAlign: 'center' }}>
           <SafetyCertificateOutlined style={{ fontSize: 40, color: 'var(--gs-primary)' }} />
           <Typography.Title level={3} style={{ margin: 0 }}>
-            GateScope
+            ClawScan
           </Typography.Title>
           <Typography.Text type="secondary">面向 OpenClaw 暴露面的轻量审计控制台</Typography.Text>
         </Space>

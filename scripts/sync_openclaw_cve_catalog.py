@@ -26,7 +26,7 @@ import yaml
 
 SEARCH_URL = "https://www.cve.org/restapiv1/search"
 SEARCH_PAGE_SIZE = 200
-USER_AGENT = "GateScope OpenClaw CVE Sync/1.0"
+USER_AGENT = "ClawScan OpenClaw CVE Sync/1.0"
 
 ZH_TO_EN_SEVERITY = {
     "超危": "critical",

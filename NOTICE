@@ -1,4 +1,4 @@
-GateScope
+ClawScan
 
 Derived-from notice:
 
@@ -21,5 +21,5 @@ Key fork-specific work included here:
 
 Branding note:
 
-- The public-facing project name used in this repository is `GateScope`.
+- The public-facing project name used in this repository is `ClawScan`.
 - Internal Go module paths may still reference the upstream import path for compatibility and to avoid unnecessary refactors.

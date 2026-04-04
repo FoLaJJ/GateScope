@@ -1,8 +1,8 @@
-# GateScope
+# ClawScan
 
 [中文](README.md)
 
-GateScope is an independently maintained AI agent exposure discovery and vulnerability auditing project derived from `AutoScan/agentscan`, with field-oriented operational and rule-management enhancements.
+ClawScan is an independently maintained AI agent exposure discovery and vulnerability auditing project derived from `AutoScan/agentscan`, with field-oriented operational and rule-management enhancements.
 
 This fork is no longer trying to stay a broad, generic agent-scanning platform. It has been intentionally narrowed into an `OpenClaw`-focused detection and auditing build:
 - rule coverage, PoC handling, identifier mapping, title normalization, Chinese descriptions, catalog views, and exports are all centered on `OpenClaw`
@@ -71,15 +71,15 @@ Detection policy:
 
 Login:
 
-![GateScope Login](docs/screenshots/login-current-headless.png)
+![ClawScan Login](docs/screenshots/login-current-headless.png)
 
 Vulnerability Center:
 
-![GateScope Vulnerabilities](docs/screenshots/vulnerability-center-current.png)
+![ClawScan Vulnerabilities](docs/screenshots/vulnerability-center-current.png)
 
 Assets:
 
-![GateScope Assets](docs/screenshots/assets-current.png)
+![ClawScan Assets](docs/screenshots/assets-current.png)
 
 ## Quick Start
 
@@ -148,4 +148,4 @@ Notes:
 ## Compatibility Note
 
 - Internal Go imports still use `github.com/AutoScan/agentscan`
-- This is intentionally retained in the current release to reduce avoidable refactor risk while publishing GateScope as an independent project
+- This is intentionally retained in the current release to reduce avoidable refactor risk while publishing ClawScan as an independent project

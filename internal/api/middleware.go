@@ -12,7 +12,7 @@ import (
 )
 
 const RequestIDKey = "X-Request-ID"
-const InstanceIDKey = "X-GateScope-Instance"
+const InstanceIDKey = "X-ClawScan-Instance"
 
 func requestIDMiddleware() gin.HandlerFunc {
 	return func(c *gin.Context) {

@@ -27,8 +27,8 @@ var cfgFile string
 func main() {
 	rootCmd := &cobra.Command{
 		Use:   "agentscan",
-		Short: "GateScope - AI Agent 网络资产发现与安全审计平台",
-		Long:  "GateScope 面向企业安全团队的 AI Agent 暴露面检测系统",
+		Short: "ClawScan - OpenClaw 暴露面扫描与漏洞核验平台",
+		Long:  "ClawScan 面向 OpenClaw 场景的暴露面检测与漏洞核验系统",
 	}
 
 	rootCmd.PersistentFlags().StringVar(&cfgFile, "config", "", "配置文件路径 (默认搜索 ./config.yaml, ./configs/, ./_data/, /etc/agentscan/)")
@@ -65,7 +65,7 @@ func serverCmd() *cobra.Command {
 
 	cmd := &cobra.Command{
 		Use:   "server",
-		Short: "启动 GateScope Web 服务",
+		Short: "启动 ClawScan Web 服务",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			cfg, err := loadConfig()
 			if err != nil {
@@ -168,7 +168,7 @@ func scanCmd() *cobra.Command {
 			}
 
 			fmt.Println("╔══════════════════════════════════════════════════════════╗")
-			fmt.Println("║            GateScope  v0.4.0                            ║")
+			fmt.Println("║            ClawScan  v0.4.0                             ║")
 			fmt.Println("║    AI Agent Discovery & Security Audit                   ║")
 			fmt.Println("╚══════════════════════════════════════════════════════════╝")
 			fmt.Println()
@@ -275,7 +275,7 @@ func versionCmd() *cobra.Command {
 		Use:   "version",
 		Short: "显示版本信息",
 		Run: func(cmd *cobra.Command, args []string) {
-			fmt.Println("GateScope v0.4.0")
+			fmt.Println("ClawScan v0.4.0")
 		},
 	}
 }

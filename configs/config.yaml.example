@@ -1,4 +1,4 @@
-# GateScope 配置文件
+# ClawScan 配置文件
 # 环境变量覆盖: AGENTSCAN_<SECTION>_<KEY>, 例如 AGENTSCAN_SERVER_PORT=9090
 
 server:

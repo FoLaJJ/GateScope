@@ -21,7 +21,7 @@ describe('Login page', () => {
   it('renders login form with default credentials', () => {
     renderWithProviders(<Login />)
 
-    expect(screen.getByRole('heading', { name: 'GateScope' })).toBeInTheDocument()
+    expect(screen.getByRole('heading', { name: 'ClawScan' })).toBeInTheDocument()
     expect(screen.getByText('默认账号已填好')).toBeInTheDocument()
     expect(screen.getByDisplayValue('admin')).toBeInTheDocument()
     expect(screen.getByDisplayValue('agentscan')).toBeInTheDocument()

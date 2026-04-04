@@ -91,7 +91,7 @@ func GenerateExcel(data ExcelReportData) (*excelize.File, error) {
 	f.SetColWidth(sheet, "A", "A", 20)
 	f.SetColWidth(sheet, "B", "B", 40)
 
-	f.SetCellValue(sheet, "A1", "GateScope 安全扫描报告")
+	f.SetCellValue(sheet, "A1", "ClawScan 安全扫描报告")
 	f.SetCellStyle(sheet, "A1", "A1", titleStyle)
 	f.MergeCell(sheet, "A1", "B1")
 

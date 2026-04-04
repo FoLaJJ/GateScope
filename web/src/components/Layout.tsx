@@ -40,7 +40,7 @@ export default function AppLayout() {
 
   const firstPathSegment = location.pathname.split('/').filter(Boolean)[0]
   const selectedKey = firstPathSegment ? `/${firstPathSegment}` : '/'
-  const meta = headerMeta[selectedKey] ?? { kicker: 'GateScope', title: 'OpenClaw 暴露面控制台' }
+  const meta = headerMeta[selectedKey] ?? { kicker: 'ClawScan', title: 'OpenClaw 暴露面控制台' }
 
   return (
     <Layout className="app-shell">
@@ -52,9 +52,9 @@ export default function AppLayout() {
           {!collapsed && (
             <div>
               <Typography.Title level={4} className="app-brand-title">
-                GateScope
+                ClawScan
               </Typography.Title>
-              <Typography.Text className="app-brand-subtitle">Asset Security Console</Typography.Text>
+              <Typography.Text className="app-brand-subtitle">OpenClaw Exposure Scanner</Typography.Text>
             </div>
           )}
         </div>

@@ -18,7 +18,7 @@ TAIL_LINES=120
 
 usage() {
   cat <<'EOF'
-GateScope control
+ClawScan control
 
 Usage:
   ./agentscanctl help
@@ -38,11 +38,11 @@ Usage:
 Main commands:
   install      Prepare runtime directories, create config, install web deps, build web and backend
   build        Build backend; build web when --build-web is used or web/dist is missing
-  start        Build if needed and start GateScope in background
-  stop         Stop the managed GateScope process only
-  restart      Stop then start GateScope
+  start        Build if needed and start ClawScan in background
+  stop         Stop the managed ClawScan process only
+  restart      Stop then start ClawScan
   status       Show running status, URL and port listener
-  logs         Tail GateScope logs
+  logs         Tail ClawScan logs
   env          Show key paths and current runtime layout
   doctor       Quick environment and runtime self-check
 
@@ -339,7 +339,7 @@ show_env() {
   load_runtime_values
 
   cat <<EOF
-GateScope layout
+ClawScan layout
   root:       $ROOT_DIR
   ctl:        $ROOT_DIR/agentscanctl
   config:     $CONFIG_FILE
@@ -442,7 +442,7 @@ start_service() {
 
   if sync_pid_file; then
     CURRENT_PID="$(cat "$PID_FILE" 2>/dev/null || true)"
-    echo "GateScope is already running."
+    echo "ClawScan is already running."
     echo "PID: $CURRENT_PID"
     echo "URL: http://$DISPLAY_HOST:$PORT/"
     return 0
@@ -466,7 +466,7 @@ start_service() {
 
   sleep 2
   if ! is_running "$PID"; then
-    echo "GateScope failed to stay up. Recent log output:"
+    echo "ClawScan failed to stay up. Recent log output:"
     tail -n 40 "$LOG_FILE" || true
     rm -f "$PID_FILE"
     return 1
@@ -474,12 +474,12 @@ start_service() {
 
   PORT_IN_USE="$(port_listener "$PORT")"
   if [[ -z "$PORT_IN_USE" ]]; then
-    echo "GateScope process started but port $PORT is not listening yet. Recent log output:"
+    echo "ClawScan process started but port $PORT is not listening yet. Recent log output:"
     tail -n 40 "$LOG_FILE" || true
     return 1
   fi
 
-  echo "GateScope started successfully."
+  echo "ClawScan started successfully."
   echo "PID: $PID"
   echo "URL: http://$DISPLAY_HOST:$PORT/"
   echo "Log: $LOG_FILE"
@@ -525,11 +525,11 @@ stop_service() {
       if [[ -z "$pid_file_pid" ]]; then
         echo "PID file was empty and has been removed."
       else
-        echo "Process $pid_file_pid is not the managed GateScope server. Removed stale PID file."
+        echo "Process $pid_file_pid is not the managed ClawScan server. Removed stale PID file."
       fi
       return 0
     fi
-    echo "No managed GateScope process found."
+    echo "No managed ClawScan process found."
     return 0
   fi
 
@@ -541,13 +541,13 @@ stop_service() {
     mapfile -t REMAINING_PIDS < <(find_managed_pids)
     if [[ "${#REMAINING_PIDS[@]}" -eq 0 ]]; then
       rm -f "$PID_FILE"
-      echo "GateScope stopped."
+      echo "ClawScan stopped."
       return 0
     fi
     sleep 1
   done
 
-  echo "Managed GateScope processes did not exit within 20 seconds. No force kill was used."
+  echo "Managed ClawScan processes did not exit within 20 seconds. No force kill was used."
   return 1
 }
 
