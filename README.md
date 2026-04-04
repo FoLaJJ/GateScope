@@ -10,7 +10,7 @@
 - 因此它和上游项目在维护方向、规则规模、展示逻辑、交付方式上已经有比较大的差异
 
 当前维护仓库：
-- `https://github.com/FoLaJJ/GateScope`
+- `https://github.com/FoLaJJ/ClawScan`
 
 上游原仓库：
 - `https://github.com/AutoScan/agentscan`
@@ -189,8 +189,8 @@
 1. 克隆仓库
 
 ```bash
-git clone https://github.com/FoLaJJ/GateScope.git
-cd GateScope
+git clone https://github.com/FoLaJJ/ClawScan.git
+cd ClawScan
 ```
 
 2. 准备配置

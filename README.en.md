@@ -10,7 +10,7 @@ This fork is no longer trying to stay a broad, generic agent-scanning platform. 
 - as a result, this fork now differs substantially from upstream in maintenance direction, catalog scale, presentation logic, and delivery workflow
 
 Current repository:
-- `https://github.com/FoLaJJ/GateScope`
+- `https://github.com/FoLaJJ/ClawScan`
 
 Upstream repository:
 - `https://github.com/AutoScan/agentscan`
@@ -86,8 +86,8 @@ Assets:
 1. Clone
 
 ```bash
-git clone https://github.com/FoLaJJ/GateScope.git
-cd GateScope
+git clone https://github.com/FoLaJJ/ClawScan.git
+cd ClawScan
 ```
 
 2. Prepare config
