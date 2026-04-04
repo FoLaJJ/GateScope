@@ -87,12 +87,6 @@
 - 规则条目新增 `description_zh` 字段；旧漏洞记录在读取时也会按当前规则自动补齐中文描述
 - 已合并的 CNNVD 映射已扩展为 155 条 OpenClaw 批量清单，并保留先前补录的历史映射；后续新增编号继续只需维护 `configs/rules/openclaw-id-mappings.yaml`
 
-## 页面展示
-
-当前登录页（2026-04-04，简化后的新版配色与一键登录入口）：
-
-![GateScope Login Current](./docs/screenshots/login-current.png)
-
 ## 本次新增的官方漏洞
 
 - 在原有 `10` 条 `GHSA` 官方规则基础上，本轮继续补齐 `131` 条基于 `NVD + CNNVD OpenClaw 批量清单` 的版本规则，重点覆盖 `CVE-2026-320xx`、`CVE-2026-329xx`、`CVE-2026-221xx`、`CVE-2026-275xx`、`CVE-2026-328xx`、`CVE-2026-345xx` 等批次。
