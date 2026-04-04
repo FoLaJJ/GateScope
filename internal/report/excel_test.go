@@ -45,11 +45,11 @@ func TestGenerateExcelIncludesAssetContextForVulnerabilities(t *testing.T) {
 	assertCell(t, f, "漏洞详情", "A2", "192.168.79.134")
 	assertCell(t, f, "漏洞详情", "B2", "18789")
 	assertCell(t, f, "漏洞详情", "E2", "CVE-2026-25253")
-	assertCell(t, f, "漏洞详情", "K2", "PoC实证")
-	assertCell(t, f, "漏洞详情", "L2", "中文漏洞描述")
-	assertCell(t, f, "漏洞详情", "M2", "English vulnerability description")
+	assertCell(t, f, "漏洞详情", "J2", "PoC实证")
+	assertCell(t, f, "漏洞详情", "K2", "中文漏洞描述")
+	assertCell(t, f, "漏洞详情", "L2", "English vulnerability description")
 	assertCell(t, f, "修复清单", "B2", "192.168.79.134")
-	assertCell(t, f, "修复清单", "L2", "192.168.79.134:18789 (openclaw)")
+	assertCell(t, f, "修复清单", "K2", "192.168.79.134:18789 (openclaw)")
 }
 
 func assertCell(t *testing.T, f *excelize.File, sheet, cell, want string) {

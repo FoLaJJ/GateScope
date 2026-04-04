@@ -83,7 +83,6 @@ describe('TaskDetail page', () => {
         rule_count: 12,
         cve_count: 10,
         cnnvd_count: 2,
-        ghsa_count: 3,
         poc_count: 4,
         consistent: true,
         issues: [],
@@ -139,7 +138,6 @@ describe('TaskDetail page', () => {
         rule_count: 12,
         cve_count: 10,
         cnnvd_count: 2,
-        ghsa_count: 3,
         poc_count: 4,
         consistent: true,
         issues: [],
@@ -191,7 +189,6 @@ describe('TaskDetail page', () => {
         rule_count: 12,
         cve_count: 10,
         cnnvd_count: 2,
-        ghsa_count: 3,
         poc_count: 4,
         consistent: true,
         issues: [],
@@ -216,5 +213,62 @@ describe('TaskDetail page', () => {
     renderWithProviders(<DelayedTaskDetailRoute />, '/tasks/task-1')
 
     expect(await screen.findByText('延迟加载任务')).toBeInTheDocument()
+  })
+
+  it('handles malformed catalog and cvss payloads without crashing', async () => {
+    vi.mocked(useTask).mockReturnValue({
+      data: makeTask({ id: 'task-1', name: '脏数据任务', status: 'completed' }),
+      isLoading: false,
+      refetch: vi.fn(),
+    } as never)
+    vi.mocked(useAssetList).mockReturnValue({
+      data: { data: [makeAsset()], total: 1 },
+    } as never)
+    vi.mocked(useTaskTargets).mockReturnValue({
+      data: {
+        data: [
+          {
+            target: '1.1.1.1',
+            status: 'unknown_status',
+            status_text: '未知状态',
+            summary: '历史脏数据',
+          },
+        ],
+        total: 1,
+      },
+    } as never)
+    vi.mocked(useTaskEvents).mockReturnValue({
+      data: { data: [], total: 0 },
+    } as never)
+    vi.mocked(useVulnList).mockReturnValue({
+      data: {
+        data: [makeVulnerability({ cvss: '8.8' as never })],
+        total: 1,
+      },
+    } as never)
+    vi.mocked(useRuleCatalog).mockReturnValue({
+      data: {
+        updated_at: '2026-04-03',
+        source_cutoff: '2026-04-03',
+        rule_count: 12,
+        cve_count: 10,
+        cnnvd_count: 2,
+        poc_count: 4,
+        consistent: false,
+        issues: undefined as never,
+      },
+    } as never)
+
+    renderWithProviders(
+      <Routes>
+        <Route path="/tasks/:id" element={<TaskDetail />} />
+      </Routes>,
+      '/tasks/task-1',
+    )
+
+    expect(await screen.findByText('脏数据任务')).toBeInTheDocument()
+    expect(screen.getByText('未知状态')).toBeInTheDocument()
+    expect(screen.queryByText('页面发生错误')).not.toBeInTheDocument()
+    expect(screen.getByText(/当前存在 0 条映射告警/)).toBeInTheDocument()
   })
 })

@@ -118,7 +118,6 @@ func TestVulnerabilities(t *testing.T) {
 		AssetID:       "asset-1",
 		CVEID:         "CVE-2026-25253",
 		CNNVDID:       "CNNVD-202604-123",
-		GHSAID:        "GHSA-g8p2-7wf7-98mq",
 		Title:         "WebSocket Hijack",
 		DescriptionZH: "中文漏洞描述",
 		Severity:      models.SeverityHigh,
@@ -133,7 +132,6 @@ func TestVulnerabilities(t *testing.T) {
 	assert.Equal(t, int64(1), total)
 	assert.Equal(t, "CVE-2026-25253", vulns[0].CVEID)
 	assert.Equal(t, "CNNVD-202604-123", vulns[0].CNNVDID)
-	assert.Equal(t, "GHSA-g8p2-7wf7-98mq", vulns[0].GHSAID)
 	assert.Equal(t, "中文漏洞描述", vulns[0].DescriptionZH)
 }
 

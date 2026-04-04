@@ -2,6 +2,7 @@ package store
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"strings"
 	"time"
@@ -285,6 +286,102 @@ var migrations = []Migration{
 				}
 
 				if err := tx.Table("assets").Create(&asset).Error; err != nil {
+					return err
+				}
+			}
+
+			return nil
+		},
+	},
+	{
+		Version: "008",
+		Name:    "remove_legacy_ghsa_only_findings",
+		Up: func(tx *gorm.DB) error {
+			type staleVulnRow struct {
+				ID      string
+				AssetID string
+				TaskID  string
+			}
+			type assetRiskRow struct {
+				ID       string
+				AuthMode string
+			}
+			type vulnSeverityRow struct {
+				Severity string
+			}
+			var stale []staleVulnRow
+			if err := tx.Table("vulnerabilities").
+				Select("id, asset_id, task_id").
+				Where("check_type = ?", "cve_match").
+				Where("COALESCE(TRIM(cve_id), '') = ''").
+				Where("COALESCE(TRIM(cnnvd_id), '') = ''").
+				Where("COALESCE(TRIM(ghsa_id), '') <> ''").
+				Find(&stale).Error; err != nil {
+				return err
+			}
+			if len(stale) == 0 {
+				return nil
+			}
+
+			ids := make([]string, 0, len(stale))
+			affectedAssetIDs := make(map[string]struct{}, len(stale))
+			affectedTaskIDs := make(map[string]struct{}, len(stale))
+			for _, row := range stale {
+				ids = append(ids, row.ID)
+				if row.AssetID != "" {
+					affectedAssetIDs[row.AssetID] = struct{}{}
+				}
+				if row.TaskID != "" {
+					affectedTaskIDs[row.TaskID] = struct{}{}
+				}
+			}
+
+			if err := tx.Where("id IN ?", ids).Delete(&models.Vulnerability{}).Error; err != nil {
+				return err
+			}
+
+			for assetID := range affectedAssetIDs {
+				var asset assetRiskRow
+				if err := tx.Table("assets").Select("id, auth_mode").Where("id = ?", assetID).First(&asset).Error; err != nil {
+					if errors.Is(err, gorm.ErrRecordNotFound) {
+						continue
+					}
+					return err
+				}
+
+				var rows []vulnSeverityRow
+				if err := tx.Table("vulnerabilities").Select("severity").Where("asset_id = ?", assetID).Find(&rows).Error; err != nil {
+					return err
+				}
+
+				severities := make([]models.Severity, 0, len(rows))
+				for _, row := range rows {
+					if strings.TrimSpace(row.Severity) == "" {
+						continue
+					}
+					severities = append(severities, models.Severity(row.Severity))
+				}
+
+				derived := models.DeriveAssetRisk(asset.AuthMode, severities)
+				if err := tx.Table("assets").Where("id = ?", assetID).Update("risk_level", derived).Error; err != nil {
+					return err
+				}
+			}
+
+			for taskID := range affectedTaskIDs {
+				var count int64
+				if err := tx.Table("vulnerabilities").Where("task_id = ?", taskID).Count(&count).Error; err != nil {
+					return err
+				}
+				if err := tx.Table("tasks").Where("id = ?", taskID).Update("found_vulns", count).Error; err != nil {
+					return err
+				}
+
+				var foundAgents int64
+				if err := tx.Table("assets").Where("task_id = ?", taskID).Count(&foundAgents).Error; err != nil {
+					return err
+				}
+				if err := tx.Table("tasks").Where("id = ?", taskID).Update("found_agents", foundAgents).Error; err != nil {
 					return err
 				}
 			}

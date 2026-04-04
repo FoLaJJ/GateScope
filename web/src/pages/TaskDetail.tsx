@@ -1,4 +1,5 @@
 import { useMemo } from 'react'
+import type { CSSProperties } from 'react'
 import { useParams, Link } from 'react-router-dom'
 import { Card, Descriptions, Tag, Progress, Table, Button, Space, Typography, Tabs, Spin, Timeline, Alert } from 'antd'
 import { ArrowLeftOutlined, DownloadOutlined, ReloadOutlined } from '@ant-design/icons'
@@ -12,8 +13,49 @@ import RiskTag from '@/components/RiskTag'
 import AuthTag from '@/components/AuthTag'
 import StatCards from '@/components/StatCards'
 import { CHECK_TYPE_LABELS } from '@/constants/check'
-import { extractVersionContext, listVulnerabilityIdentifiers } from '@/utils/vuln'
+import { displayCVSS, displayPercent, displayProgressPercent, displayTimeUnknown, displayUnknown, displayUpperUnknown } from '@/utils/display'
+import { describeIdentifierState, extractVersionContext, listVulnerabilityIdentifiers } from '@/utils/vuln'
 import type { Asset, TaskTargetStatus, Vulnerability } from '@/types'
+
+const TARGET_STATUS_TAG_STYLES: Record<TaskTargetStatus['status'], CSSProperties> = {
+  identified: {
+    color: 'var(--gs-success)',
+    background: 'rgba(21, 128, 61, 0.12)',
+    borderColor: 'rgba(21, 128, 61, 0.28)',
+    fontWeight: 600,
+  },
+  scanned_no_agent: {
+    color: 'var(--gs-muted)',
+    background: 'rgba(100, 116, 139, 0.12)',
+    borderColor: 'rgba(100, 116, 139, 0.24)',
+    fontWeight: 600,
+  },
+  pending: {
+    color: 'var(--gs-primary)',
+    background: 'rgba(37, 99, 235, 0.1)',
+    borderColor: 'rgba(37, 99, 235, 0.24)',
+    fontWeight: 600,
+  },
+  scanning: {
+    color: 'var(--gs-primary-strong)',
+    background: 'rgba(29, 78, 216, 0.12)',
+    borderColor: 'rgba(29, 78, 216, 0.28)',
+    fontWeight: 600,
+  },
+  out_of_scope: {
+    color: '#a15c07',
+    background: 'rgba(245, 158, 11, 0.16)',
+    borderColor: 'rgba(245, 158, 11, 0.3)',
+    fontWeight: 600,
+  },
+}
+
+const DEFAULT_TARGET_STATUS_TAG_STYLE: CSSProperties = {
+  color: 'var(--gs-muted)',
+  background: 'rgba(100, 116, 139, 0.12)',
+  borderColor: 'rgba(100, 116, 139, 0.24)',
+  fontWeight: 600,
+}
 
 export default function TaskDetail() {
   const { id } = useParams<{ id: string }>()
@@ -32,6 +74,7 @@ export default function TaskDetail() {
   const eventTotal = eventsData?.total ?? events.length
   const assetTotal = targetsData?.total ?? assetsData?.total ?? assets.length
   const vulnTotal = vulnsData?.total ?? vulns.length
+  const ruleIssues = Array.isArray(ruleCatalog?.issues) ? ruleCatalog.issues : []
 
   const vulnsByAssetId = useMemo(() => {
     const grouped: Record<string, Vulnerability[]> = {}
@@ -58,7 +101,8 @@ export default function TaskDetail() {
   const renderIdentifiers = (record: Vulnerability) => {
     const identifiers = listVulnerabilityIdentifiers(record)
     if (identifiers.length === 0) {
-      return '-'
+      const state = describeIdentifierState(record)
+      return state ? <Tag>{state}</Tag> : '-'
     }
 
     return (
@@ -85,30 +129,23 @@ export default function TaskDetail() {
       dataIndex: 'status_text',
       key: 'status_text',
       width: 130,
-      render: (_: string, record: TaskTargetStatus) => {
-        const colorMap: Record<TaskTargetStatus['status'], string> = {
-          identified: 'success',
-          scanned_no_agent: 'default',
-          pending: 'processing',
-          scanning: 'blue',
-          out_of_scope: 'warning',
-        }
-        return <Tag color={colorMap[record.status]}>{record.status_text}</Tag>
-      },
+      render: (_: string, record: TaskTargetStatus) => (
+        <Tag style={TARGET_STATUS_TAG_STYLES[record.status] ?? DEFAULT_TARGET_STATUS_TAG_STYLE}>{record.status_text}</Tag>
+      ),
     },
     {
       title: 'IP',
       dataIndex: 'ip',
       key: 'ip',
       width: 130,
-      render: (v?: string) => v || '-',
+      render: (v?: string) => displayUnknown(v, '检测不到'),
     },
     {
       title: '端口',
       dataIndex: 'port',
       key: 'port',
       width: 70,
-      render: (v?: number) => v ?? '-',
+      render: (v?: number) => (typeof v === 'number' ? v : '检测不到'),
     },
     {
       title: 'Agent',
@@ -117,13 +154,13 @@ export default function TaskDetail() {
       width: 100,
       render: (v?: string) => (v ? <Tag color="blue">{v}</Tag> : '-'),
     },
-    { title: '版本', dataIndex: 'version', key: 'ver', width: 110, render: (v?: string) => v || '-' },
+    { title: '版本', dataIndex: 'version', key: 'ver', width: 110, render: (v?: string) => displayUnknown(v, '未查明') },
     {
       title: '认证',
       dataIndex: 'auth_mode',
       key: 'auth',
       width: 110,
-      render: (v?: string) => (v ? <AuthTag mode={v} /> : '-'),
+      render: (v?: string) => <AuthTag mode={v || 'unknown'} />,
     },
     {
       title: '风险',
@@ -137,7 +174,7 @@ export default function TaskDetail() {
       dataIndex: 'confidence',
       key: 'conf',
       width: 80,
-      render: (v?: number) => (typeof v === 'number' ? `${Math.round(v)}%` : '-'),
+      render: (v?: number) => displayPercent(v),
     },
     {
       title: '漏洞数',
@@ -157,13 +194,13 @@ export default function TaskDetail() {
   ]
 
   const vulnColumns = [
-    { title: 'IP', dataIndex: 'asset_ip', key: 'asset_ip', width: 140, render: (v: string | undefined) => v || '-' },
+    { title: 'IP', dataIndex: 'asset_ip', key: 'asset_ip', width: 140, render: (v: string | undefined) => displayUnknown(v, '检测不到') },
     {
       title: '端口',
       dataIndex: 'asset_port',
       key: 'asset_port',
       width: 80,
-      render: (v: number | undefined) => v ?? '-',
+      render: (v: number | undefined) => (typeof v === 'number' ? v : '检测不到'),
     },
     {
       title: 'Agent',
@@ -181,7 +218,7 @@ export default function TaskDetail() {
       width: 80,
       render: (v: string) => <RiskTag level={v} />,
     },
-    { title: 'CVSS', dataIndex: 'cvss', key: 'cvss', width: 70, render: (v: number) => v?.toFixed(1) },
+    { title: 'CVSS', dataIndex: 'cvss', key: 'cvss', width: 70, render: (v: unknown) => displayCVSS(v) },
     {
       title: '判定依据',
       dataIndex: 'check_type',
@@ -240,41 +277,41 @@ export default function TaskDetail() {
     return (
       <Descriptions size="small" column={2} bordered>
         <Descriptions.Item label="关联资产" span={2}>
-          {record.asset_label || '-'}
+          {displayUnknown(record.asset_label || record.asset_id, '未关联到资产')}
         </Descriptions.Item>
-        <Descriptions.Item label="Agent类型">{record.agent_type || '-'}</Descriptions.Item>
-        <Descriptions.Item label="资产版本">{record.asset_version || '-'}</Descriptions.Item>
+        <Descriptions.Item label="Agent类型">{displayUnknown(record.agent_type, '未识别')}</Descriptions.Item>
+        <Descriptions.Item label="资产版本">{displayUnknown(record.asset_version, '未查明')}</Descriptions.Item>
         <Descriptions.Item label="漏洞编号" span={2}>
           {renderIdentifiers(record)}
         </Descriptions.Item>
         <Descriptions.Item label="认证模式">
-          {record.auth_mode ? <AuthTag mode={record.auth_mode} /> : '-'}
+          <AuthTag mode={record.auth_mode || 'unknown'} />
         </Descriptions.Item>
         <Descriptions.Item label="资产风险">
-          {record.risk_level ? <RiskTag level={record.risk_level} /> : '-'}
+          {record.risk_level ? <RiskTag level={record.risk_level} /> : '未查明'}
         </Descriptions.Item>
         <Descriptions.Item label="当前版本">
-          {versionContext.currentVersion || record.asset_version || '-'}
+          {displayUnknown(versionContext.currentVersion || record.asset_version, '未查明')}
         </Descriptions.Item>
-        <Descriptions.Item label="修复版本">{versionContext.fixedVersion || '-'}</Descriptions.Item>
+        <Descriptions.Item label="修复版本">{displayUnknown(versionContext.fixedVersion, '未提供')}</Descriptions.Item>
         <Descriptions.Item label="本地PoC规则">{versionContext.hasLocalPoCRule ? '是' : '否'}</Descriptions.Item>
         <Descriptions.Item label="检测时间">
-          {record.detected_at ? new Date(record.detected_at).toLocaleString('zh-CN') : '-'}
+          {displayTimeUnknown(record.detected_at)}
         </Descriptions.Item>
         <Descriptions.Item label="完整描述" span={2}>
           <Space direction="vertical" size={4} style={{ width: '100%' }}>
             <div>
               <Typography.Text strong>中文：</Typography.Text>
-              <Typography.Text>{record.description_zh || '-'}</Typography.Text>
+              <Typography.Text>{displayUnknown(record.description_zh, '未提供中文描述')}</Typography.Text>
             </div>
             <div>
               <Typography.Text strong>English:</Typography.Text>
-              <Typography.Text>{record.description || '-'}</Typography.Text>
+              <Typography.Text>{displayUnknown(record.description, 'No English description available')}</Typography.Text>
             </div>
           </Space>
         </Descriptions.Item>
         <Descriptions.Item label="修复建议" span={2}>
-          <Typography.Text type="success">{record.remediation || '-'}</Typography.Text>
+          <Typography.Text type="success">{displayUnknown(record.remediation, '未提供修复建议')}</Typography.Text>
         </Descriptions.Item>
         <Descriptions.Item label="证据" span={2}>
           <Typography.Paragraph
@@ -282,7 +319,7 @@ export default function TaskDetail() {
             style={{ marginBottom: 0, whiteSpace: 'pre-wrap', wordBreak: 'break-all' }}
             copyable
           >
-            {record.evidence || '-'}
+            {displayUnknown(record.evidence, '未采集到证据')}
           </Typography.Paragraph>
         </Descriptions.Item>
       </Descriptions>
@@ -334,7 +371,7 @@ export default function TaskDetail() {
           <Descriptions.Item label="状态">
             <StatusBadge status={task.status} />
           </Descriptions.Item>
-          <Descriptions.Item label="扫描深度">{task.scan_depth?.toUpperCase()}</Descriptions.Item>
+          <Descriptions.Item label="扫描深度">{displayUpperUnknown(task.scan_depth)}</Descriptions.Item>
           <Descriptions.Item label="目标数">{task.total_targets}</Descriptions.Item>
           <Descriptions.Item label="已扫描">{task.scanned_targets}</Descriptions.Item>
           <Descriptions.Item label="开放端口">{task.open_ports}</Descriptions.Item>
@@ -344,7 +381,7 @@ export default function TaskDetail() {
           <Descriptions.Item label="目标">{task.targets}</Descriptions.Item>
         </Descriptions>
         {task.status === 'running' && (
-          <Progress percent={Math.round(task.progress_percent)} style={{ marginTop: 16 }} status="active" />
+          <Progress percent={displayProgressPercent(task.progress_percent)} style={{ marginTop: 16 }} status="active" />
         )}
         {task.status === 'completed' && <Progress percent={100} style={{ marginTop: 16 }} />}
         {task.error_message && (
@@ -360,8 +397,8 @@ export default function TaskDetail() {
           type={ruleCatalog.consistent ? 'info' : 'warning'}
           showIcon
           message={`漏洞规则库更新时间：${ruleCatalog.updated_at || '未标注'}，上游截止：${ruleCatalog.source_cutoff || '未标注'}`}
-          description={`当前内置 ${ruleCatalog.rule_count} 条版本规则，其中 CVE ${ruleCatalog.cve_count} 条、CNNVD ${ruleCatalog.cnnvd_count} 条、GHSA ${ruleCatalog.ghsa_count} 条，PoC ${ruleCatalog.poc_count} 条。${
-            ruleCatalog.consistent ? '当前映射校验通过。' : `当前存在 ${ruleCatalog.issues.length} 条映射告警。`
+          description={`当前内置 ${ruleCatalog.rule_count} 条版本规则，其中 CVE ${ruleCatalog.cve_count} 条、CNNVD ${ruleCatalog.cnnvd_count} 条，PoC ${ruleCatalog.poc_count} 条。${
+            ruleCatalog.consistent ? '当前映射校验通过。' : `当前存在 ${ruleIssues.length} 条映射告警。`
           } ${mappingStatusText}${ruleCatalog.notes ? ` ${ruleCatalog.notes}` : ''}`}
         />
       )}

@@ -7,11 +7,11 @@ import (
 )
 
 func TestDeriveAssetRisk(t *testing.T) {
-	assert.Equal(t, RiskCritical, DeriveAssetRisk("", nil))
-	assert.Equal(t, RiskLow, DeriveAssetRisk("token_auth", nil))
+	assert.Equal(t, RiskInfo, DeriveAssetRisk("", nil))
+	assert.Equal(t, RiskInfo, DeriveAssetRisk("token_auth", nil))
 	assert.Equal(t, RiskHigh, DeriveAssetRisk("token_auth", []Severity{SeverityHigh}))
 	assert.Equal(t, RiskCritical, DeriveAssetRisk("token_auth", []Severity{SeverityLow, SeverityCritical}))
-	assert.Equal(t, RiskCritical, DeriveAssetRisk("open", []Severity{SeverityLow}))
+	assert.Equal(t, RiskLow, DeriveAssetRisk("open", []Severity{SeverityLow}))
 }
 
 func TestMaxRiskLevel(t *testing.T) {

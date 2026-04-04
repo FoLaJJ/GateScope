@@ -8,6 +8,7 @@ import RiskTag from '@/components/RiskTag'
 import AuthTag from '@/components/AuthTag'
 import { getRiskOptions, confidenceColor } from '@/constants'
 import { useURLQueryState } from '@/hooks/useURLQueryState'
+import { displayJSONUnknown, displayPercent, displayTimeUnknown, displayUnknown, toFiniteNumber } from '@/utils/display'
 import type { Asset, AssetListParams } from '@/types'
 
 type AssetQueryState = {
@@ -63,24 +64,20 @@ export default function Assets() {
 
   const expandedRow = (record: Asset) => (
     <Descriptions size="small" column={3} bordered>
-      <Descriptions.Item label="Agent ID">{record.agent_id || '-'}</Descriptions.Item>
+      <Descriptions.Item label="Agent ID">{displayUnknown(record.agent_id, '未识别')}</Descriptions.Item>
       <Descriptions.Item label="首次发现">
-        {record.first_seen_at ? new Date(record.first_seen_at).toLocaleString('zh-CN') : '-'}
+        {displayTimeUnknown(record.first_seen_at)}
       </Descriptions.Item>
       <Descriptions.Item label="最后发现">
-        {record.last_seen_at ? new Date(record.last_seen_at).toLocaleString('zh-CN') : '-'}
+        {displayTimeUnknown(record.last_seen_at)}
       </Descriptions.Item>
-      <Descriptions.Item label="国家/地区">{record.country || '-'}</Descriptions.Item>
-      <Descriptions.Item label="省份">{record.province || '-'}</Descriptions.Item>
-      <Descriptions.Item label="城市">{record.city || '-'}</Descriptions.Item>
-      <Descriptions.Item label="ISP">{record.isp || '-'}</Descriptions.Item>
-      <Descriptions.Item label="ASN">{record.asn || '-'}</Descriptions.Item>
+      <Descriptions.Item label="国家/地区">{displayUnknown(record.country, '未获取到')}</Descriptions.Item>
+      <Descriptions.Item label="省份">{displayUnknown(record.province, '未获取到')}</Descriptions.Item>
+      <Descriptions.Item label="城市">{displayUnknown(record.city, '未获取到')}</Descriptions.Item>
+      <Descriptions.Item label="ISP">{displayUnknown(record.isp, '未获取到')}</Descriptions.Item>
+      <Descriptions.Item label="ASN">{displayUnknown(record.asn, '未获取到')}</Descriptions.Item>
       <Descriptions.Item label="附加信息">
-        {record.metadata
-          ? 'raw' in record.metadata
-            ? String(record.metadata.raw)
-            : JSON.stringify(record.metadata, null, 2)
-          : '-'}
+        {record.metadata ? ('raw' in record.metadata ? String(record.metadata.raw) : displayJSONUnknown(record.metadata)) : '未获取到'}
       </Descriptions.Item>
     </Descriptions>
   )
@@ -99,15 +96,15 @@ export default function Assets() {
       dataIndex: 'agent_type',
       key: 'agent_type',
       width: 120,
-      render: (value: string) => <Typography.Text style={{ color: 'var(--gs-primary)' }}>{value}</Typography.Text>,
+      render: (value: string) => <Typography.Text style={{ color: 'var(--gs-primary)' }}>{displayUnknown(value, '未识别')}</Typography.Text>,
     },
-    { title: '版本', dataIndex: 'version', key: 'version', width: 120 },
+    { title: '版本', dataIndex: 'version', key: 'version', width: 120, render: (value?: string) => displayUnknown(value, '未查明') },
     {
       title: '认证模式',
       dataIndex: 'auth_mode',
       key: 'auth_mode',
       width: 120,
-      render: (value: string) => <AuthTag mode={value} />,
+      render: (value: string) => <AuthTag mode={value || 'unknown'} />,
     },
     {
       title: '风险等级',
@@ -123,7 +120,7 @@ export default function Assets() {
       width: 90,
       align: 'right',
       render: (value: number) => (
-        <Typography.Text style={{ color: confidenceColor(value) }}>{Math.round(value)}%</Typography.Text>
+        <Typography.Text style={{ color: confidenceColor(toFiniteNumber(value) ?? 0) }}>{displayPercent(value)}</Typography.Text>
       ),
     },
     {

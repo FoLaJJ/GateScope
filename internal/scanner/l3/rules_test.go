@@ -19,7 +19,7 @@ func TestLoadRules_AppliesIdentifierMappings(t *testing.T) {
 meta:
   updated_at: "2026-04-03"
 cves:
-  - id: "GHSA-test-0001"
+  - id: "CVE-2026-99999"
     title: "mapped rule"
     severity: "high"
     cvss: 8.8
@@ -29,10 +29,9 @@ cves:
 `), 0o644))
 	require.NoError(t, os.WriteFile(filepath.Join(rulesDir, "openclaw-id-mappings.yaml"), []byte(`
 mappings:
-  - rule_id: "GHSA-test-0001"
+  - rule_id: "CVE-2026-99999"
     cve_id: "CVE-2026-99999"
     cnnvd_id: "CNNVD-202604-999"
-    ghsa_id: "GHSA-test-0001"
 `), 0o644))
 	require.NoError(t, os.WriteFile(filepath.Join(rulesDir, "skills.yaml"), []byte(`
 known_malicious:
@@ -61,12 +60,11 @@ suspicious_indicators:
 	require.Len(t, rules, 1)
 	assert.Equal(t, "CVE-2026-99999", rules[0].CVEID)
 	assert.Equal(t, "CNNVD-202604-999", rules[0].CNNVDID)
-	assert.Equal(t, "GHSA-test-0001", rules[0].GHSAID)
+	assert.Equal(t, "CVE-2026-99999", rules[0].ID)
 
 	meta := GetRuleCatalogMetadata()
 	assert.Equal(t, 1, meta.CVECount)
 	assert.Equal(t, 1, meta.CNNVDCount)
-	assert.Equal(t, 1, meta.GHSACount)
 }
 
 func TestLoadRules_FlagsDuplicateIdentifierMappings(t *testing.T) {
@@ -101,8 +99,6 @@ mappings:
   - rule_id: "CVE-2026-10002"
     cve_id: "CVE-2026-10002"
     cnnvd_id: "CNNVD-202604-001"
-  - rule_id: "CVE-2026-10002"
-    ghsa_id: "GHSA-test-0002"
 `), 0o644))
 	require.NoError(t, os.WriteFile(filepath.Join(rulesDir, "skills.yaml"), []byte("known_malicious: []\nsuspicious_indicators: []\n"), 0o644))
 	require.NoError(t, os.WriteFile(filepath.Join(rulesDir, "pocs.yaml"), []byte("pocs: []\n"), 0o644))
@@ -121,7 +117,6 @@ mappings:
 
 	meta := GetRuleCatalogMetadata()
 	assert.False(t, meta.Consistent)
-	assert.Contains(t, meta.Issues, "duplicate id mapping for rule CVE-2026-10002")
 	assert.Contains(t, meta.Issues, "cnnvd_id CNNVD-202604-001 is mapped to multiple rules: CVE-2026-10001, CVE-2026-10002")
 }
 
@@ -175,7 +170,7 @@ func TestLocalizeVulnerability_ResolvesIdentifierAliasesFromMappings(t *testing.
 meta:
   updated_at: "2026-04-03"
 cves:
-  - id: "GHSA-new-0001"
+  - id: "CVE-2026-10003"
     title: "canonical rule"
     severity: "medium"
     cvss: 5.3
@@ -186,10 +181,10 @@ cves:
 `), 0o644))
 	require.NoError(t, os.WriteFile(filepath.Join(rulesDir, "openclaw-id-mappings.yaml"), []byte(`
 mappings:
-  - rule_id: "GHSA-new-0001"
-    ghsa_id: "GHSA-new-0001"
-    ghsa_aliases:
-      - "GHSA-old-0001"
+  - rule_id: "CVE-2026-10003"
+    cve_id: "CVE-2026-10003"
+    cve_aliases:
+      - "CVE-2026-10003-ALIAS"
 `), 0o644))
 	require.NoError(t, os.WriteFile(filepath.Join(rulesDir, "skills.yaml"), []byte("known_malicious: []\nsuspicious_indicators: []\n"), 0o644))
 	require.NoError(t, os.WriteFile(filepath.Join(rulesDir, "pocs.yaml"), []byte("pocs: []\n"), 0o644))
@@ -208,8 +203,8 @@ mappings:
 	resetLoadedRulesForTests()
 
 	vuln := LocalizeVulnerability(models.Vulnerability{
-		GHSAID:       "GHSA-old-0001",
-		Description:  "english demo",
+		CVEID:         "CVE-2026-10003-ALIAS",
+		Description:   "english demo",
 		DescriptionZH: "",
 	})
 	assert.Equal(t, "别名中文描述", vuln.DescriptionZH)
@@ -230,15 +225,13 @@ func TestRepositoryPoCRules_AreBoundToCanonicalIdentifiers(t *testing.T) {
 	require.True(t, ok)
 	assert.Equal(t, "CVE-2026-32302", wsRule.CVEID)
 	assert.Equal(t, "CNNVD-202603-2634", wsRule.CNNVDID)
-	assert.Equal(t, "GHSA-5wcw-8jjv-m286", wsRule.GHSAID)
-	assert.Equal(t, "high", wsRule.Severity)
+	assert.Equal(t, "medium", wsRule.Severity)
 	assert.Equal(t, 8.1, wsRule.CVSS)
 
 	ssrfRule, ok := byID["ssrf_proxy"]
 	require.True(t, ok)
 	assert.Equal(t, "CVE-2026-26324", ssrfRule.CVEID)
 	assert.Equal(t, "CNNVD-202602-2950", ssrfRule.CNNVDID)
-	assert.Equal(t, "GHSA-jrvc-8ff5-2f9f", ssrfRule.GHSAID)
 	assert.Equal(t, "high", ssrfRule.Severity)
 	assert.Equal(t, 7.5, ssrfRule.CVSS)
 
@@ -246,9 +239,8 @@ func TestRepositoryPoCRules_AreBoundToCanonicalIdentifiers(t *testing.T) {
 	require.True(t, ok)
 	assert.Equal(t, "CVE-2026-32024", avatarRule.CVEID)
 	assert.Equal(t, "CNNVD-202603-3398", avatarRule.CNNVDID)
-	assert.Equal(t, "GHSA-rx3g-mvc3-qfjf", avatarRule.GHSAID)
 	assert.Equal(t, "medium", avatarRule.Severity)
-	assert.Equal(t, 5.5, avatarRule.CVSS)
+	assert.Equal(t, 6.8, avatarRule.CVSS)
 
 	_, hasLegacyTraversalPoC := byID["path_traversal"]
 	assert.False(t, hasLegacyTraversalPoC, "legacy skills path traversal PoC should not be advertised under the wrong CVE")

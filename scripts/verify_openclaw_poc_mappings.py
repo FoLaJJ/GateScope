@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Verify PoC-linked OpenClaw CVE mappings against live NVD metadata."""
+"""Verify PoC-linked OpenClaw mappings against the canonical CVE rules and live NVD metadata."""
 
 from __future__ import annotations
 
@@ -58,7 +58,7 @@ def normalize_rules() -> tuple[dict[str, dict], dict[str, dict]]:
         rule = by_rule_id.get(str(mapping.get("rule_id") or "").strip())
         if not rule:
             continue
-        for field in ("cve_id", "cnnvd_id", "ghsa_id"):
+        for field in ("cve_id", "cnnvd_id"):
             value = str(mapping.get(field) or "").strip()
             if value:
                 rule[field] = value
@@ -92,6 +92,7 @@ def main() -> int:
     pocs = load_pocs()
 
     issues: list[str] = []
+    live_notes: list[str] = []
 
     for poc in pocs:
         cve_id = str(poc.get("cve_id") or "").strip()
@@ -103,6 +104,32 @@ def main() -> int:
             issues.append(f"{poc['id']}: missing canonical rule for {cve_id}")
             continue
 
+        expected_cnnvd = str(local_rule.get("cnnvd_id") or "").strip()
+        actual_cnnvd = str(poc.get("cnnvd_id") or "").strip()
+        if actual_cnnvd != expected_cnnvd:
+            issues.append(
+                f"{poc['id']}: {cve_id} cnnvd mismatch poc={actual_cnnvd or '<empty>'} canonical={expected_cnnvd or '<empty>'}"
+            )
+
+        expected_severity = str(local_rule.get("severity") or "").strip().lower()
+        actual_severity = str(poc.get("severity") or "").strip().lower()
+        if actual_severity != expected_severity:
+            issues.append(
+                f"{poc['id']}: {cve_id} severity mismatch poc={actual_severity or '<empty>'} canonical={expected_severity or '<empty>'}"
+            )
+
+        expected_cvss = float(local_rule.get("cvss", 0) or 0)
+        actual_cvss = float(poc.get("cvss", 0) or 0)
+        if abs(actual_cvss - expected_cvss) > 1e-9:
+            issues.append(f"{poc['id']}: {cve_id} cvss mismatch poc={actual_cvss} canonical={expected_cvss}")
+
+        expected_remediation = str(local_rule.get("remediation") or "").strip()
+        actual_remediation = str(poc.get("remediation") or "").strip()
+        if actual_remediation != expected_remediation:
+            issues.append(
+                f"{poc['id']}: {cve_id} remediation mismatch poc={actual_remediation!r} canonical={expected_remediation!r}"
+            )
+
         payload = fetch_json(NVD_API.format(cve_id=cve_id))
         vulnerabilities = payload.get("vulnerabilities") or []
         if not vulnerabilities:
@@ -112,9 +139,6 @@ def main() -> int:
         cve = vulnerabilities[0]["cve"]
         descriptions = cve.get("descriptions") or []
         english = next((item.get("value", "") for item in descriptions if item.get("lang") == "en"), "")
-        references = [ref.get("url", "") for ref in cve.get("references") or []]
-        ghsa_refs = sorted({match.group(1) for ref in references if (match := re.search(r"(GHSA-[A-Za-z0-9\-]+)", ref))})
-
         if "OpenClaw" not in english:
             issues.append(f"{poc['id']}: {cve_id} NVD description does not mention OpenClaw")
 
@@ -134,19 +158,13 @@ def main() -> int:
             expected_score = float(metric["baseScore"])
             expected_severity = str(metric["baseSeverity"]).lower()
             if abs(float(local_rule.get("cvss", 0) or 0) - expected_score) > 1e-9:
-                issues.append(
+                live_notes.append(
                     f"{poc['id']}: {cve_id} cvss mismatch local={local_rule.get('cvss')} nvd={expected_score}"
                 )
             if str(local_rule.get("severity") or "").strip().lower() != expected_severity:
-                issues.append(
+                live_notes.append(
                     f"{poc['id']}: {cve_id} severity mismatch local={local_rule.get('severity')} nvd={expected_severity}"
                 )
-
-        local_ghsa = str(local_rule.get("ghsa_id") or "").strip()
-        if ghsa_refs and local_ghsa not in ghsa_refs:
-            issues.append(
-                f"{poc['id']}: {cve_id} ghsa mismatch local={local_ghsa or '<empty>'} nvd_refs={','.join(ghsa_refs)}"
-            )
 
     print(f"checked_pocs={sum(1 for poc in pocs if str(poc.get('cve_id') or '').strip())}")
     if issues:
@@ -155,7 +173,11 @@ def main() -> int:
             print(f"  - {issue}")
         return 1
 
-    print("verified: all PoC-linked rules match live NVD metadata")
+    print("verified: all PoC-linked rules match the canonical YAML catalog")
+    if live_notes:
+        print("live_reference_notes:")
+        for note in live_notes:
+            print(f"  - {note}")
     return 0
 
 

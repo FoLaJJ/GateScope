@@ -475,6 +475,11 @@ func (s *Server) handleRuleCatalog(c *gin.Context) {
 	respondOK(c, l3.GetRuleCatalogMetadata())
 }
 
+func (s *Server) handleRuleCatalogEntries(c *gin.Context) {
+	entries := l3.GetRuleCatalogEntries()
+	respondOK(c, gin.H{"data": entries, "total": len(entries)})
+}
+
 func buildDownloadDisposition(filename string) string {
 	base := filepath.Base(strings.TrimSpace(filename))
 	if base == "" || base == "." || base == string(filepath.Separator) {
@@ -516,7 +521,7 @@ func firstNonEmpty(values ...string) string {
 
 func normalizeIdentifierType(raw string) string {
 	switch strings.ToLower(strings.TrimSpace(raw)) {
-	case "cve", "cnnvd", "ghsa":
+	case "cve", "cnnvd":
 		return strings.ToLower(strings.TrimSpace(raw))
 	default:
 		return ""

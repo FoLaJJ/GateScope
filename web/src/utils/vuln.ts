@@ -1,4 +1,6 @@
-import type { Vulnerability } from '@/types'
+import type { RuleCatalogEntry, Vulnerability } from '@/types'
+
+type WithIdentifiers = Pick<Vulnerability, 'cve_id' | 'cnnvd_id' | 'check_type'>
 
 export function parseEvidenceTokens(evidence?: string) {
   const tokens: Record<string, string> = {}
@@ -23,38 +25,36 @@ export function extractVersionContext(vuln: Vulnerability) {
   }
 }
 
-function isOpenClawVulnerability(vuln: Vulnerability) {
-  return vuln.agent_type?.toLowerCase() === 'openclaw' || vuln.title.toLowerCase().includes('openclaw')
-}
-
 export function buildCnnvdUrl(cnnvdID: string) {
   return `https://www.cnnvd.org.cn/home/globalSearch?keyword=${encodeURIComponent(cnnvdID)}`
 }
 
-export function buildGhsaUrl(vuln: Vulnerability) {
-  if (!vuln.ghsa_id) {
-    return ''
-  }
-
-  if (isOpenClawVulnerability(vuln)) {
-    return `https://github.com/openclaw/openclaw/security/advisories/${vuln.ghsa_id}`
-  }
-
-  return `https://github.com/advisories/${vuln.ghsa_id}`
+export function buildCveUrl(cveID: string) {
+  return `https://www.cve.org/CVERecord?id=${encodeURIComponent(cveID)}`
 }
 
-export function listVulnerabilityIdentifiers(vuln: Vulnerability) {
+export function listVulnerabilityIdentifiers(vuln: WithIdentifiers | RuleCatalogEntry) {
   return [
     vuln.cve_id
-      ? { key: `cve:${vuln.cve_id}`, label: vuln.cve_id, href: `https://nvd.nist.gov/vuln/detail/${vuln.cve_id}` }
+      ? { key: `cve:${vuln.cve_id}`, label: vuln.cve_id, href: buildCveUrl(vuln.cve_id) }
       : null,
     vuln.cnnvd_id
       ? { key: `cnnvd:${vuln.cnnvd_id}`, label: vuln.cnnvd_id, href: buildCnnvdUrl(vuln.cnnvd_id) }
       : null,
-    vuln.ghsa_id
-      ? { key: `ghsa:${vuln.ghsa_id}`, label: vuln.ghsa_id, href: buildGhsaUrl(vuln) }
-      : null,
   ].filter((item): item is { key: string; label: string; href: string } => Boolean(item))
+}
+
+export function describeIdentifierState(vuln: WithIdentifiers) {
+  if (vuln.cve_id || vuln.cnnvd_id) {
+    return ''
+  }
+  if (vuln.check_type === 'auth_check' || vuln.check_type === 'skills_check') {
+    return '内置暴露检查，无对应CVE'
+  }
+  if (vuln.check_type === 'poc_verify') {
+    return 'PoC已命中，但未提供外部编号'
+  }
+  return '暂无漏洞编号'
 }
 
 export function getPreferredDescription(vuln: Vulnerability) {

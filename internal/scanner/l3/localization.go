@@ -8,20 +8,32 @@ import (
 )
 
 func LocalizeVulnerability(vuln models.Vulnerability) models.Vulnerability {
+	if rule, ok := findOpenClawRuleByIdentifiers(vuln.CVEID, vuln.CNNVDID); ok {
+		if shouldUseRuleTitle(vuln.Title) && strings.TrimSpace(rule.Title) != "" {
+			vuln.Title = rule.Title
+		}
+		if strings.TrimSpace(vuln.Description) == "" && strings.TrimSpace(rule.Description) != "" {
+			vuln.Description = rule.Description
+		}
+		if shouldUseRuleDescriptionZH(vuln.DescriptionZH) && strings.TrimSpace(rule.DescriptionZH) != "" {
+			vuln.DescriptionZH = rule.DescriptionZH
+		}
+		if strings.TrimSpace(vuln.Remediation) == "" && strings.TrimSpace(rule.Remediation) != "" {
+			vuln.Remediation = rule.Remediation
+		}
+		if vuln.CVSS == 0 && rule.CVSS > 0 {
+			vuln.CVSS = rule.CVSS
+		}
+	}
+
 	if strings.TrimSpace(vuln.DescriptionZH) != "" {
 		return vuln
 	}
-
-	if rule, ok := findOpenClawRuleByIdentifiers(vuln.CVEID, vuln.CNNVDID, vuln.GHSAID); ok && strings.TrimSpace(rule.DescriptionZH) != "" {
-		vuln.DescriptionZH = rule.DescriptionZH
-		return vuln
-	}
-
 	vuln.DescriptionZH = fallbackDescriptionZH(vuln)
 	return vuln
 }
 
-func findOpenClawRuleByIdentifiers(cveID, cnnvdID, ghsaID string) (CVEEntry, bool) {
+func findOpenClawRuleByIdentifiers(cveID, cnnvdID string) (CVEEntry, bool) {
 	rules := getOpenClawCVEs()
 
 	if rule, ok := findRuleByAlias(cveID, loadedCVEAliases); ok {
@@ -30,17 +42,12 @@ func findOpenClawRuleByIdentifiers(cveID, cnnvdID, ghsaID string) (CVEEntry, boo
 	if rule, ok := findRuleByAlias(cnnvdID, loadedCNNVDAliases); ok {
 		return rule, true
 	}
-	if rule, ok := findRuleByAlias(ghsaID, loadedGHSAAliases); ok {
-		return rule, true
-	}
 
 	for _, rule := range rules {
 		switch {
 		case cveID != "" && (rule.CVEID == cveID || rule.ID == cveID):
 			return rule, true
 		case cnnvdID != "" && rule.CNNVDID == cnnvdID:
-			return rule, true
-		case ghsaID != "" && (rule.GHSAID == ghsaID || rule.ID == ghsaID):
 			return rule, true
 		}
 	}
@@ -89,6 +96,19 @@ func fallbackRuleTitle(title string) string {
 		return "OpenClaw 漏洞"
 	}
 	return title
+}
+
+func shouldUseRuleTitle(title string) bool {
+	title = strings.TrimSpace(title)
+	return title == "" || strings.HasPrefix(title, "OpenClaw ") || strings.HasPrefix(title, "[PoC] OpenClaw ")
+}
+
+func shouldUseRuleDescriptionZH(description string) bool {
+	description = strings.TrimSpace(description)
+	if description == "" {
+		return true
+	}
+	return strings.Contains(description, "该漏洞与“OpenClaw")
 }
 
 func fallbackDescriptionZH(vuln models.Vulnerability) string {

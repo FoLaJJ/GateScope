@@ -19,7 +19,6 @@ type PoCResult struct {
 	Name          string
 	CVEID         string
 	CNNVDID       string
-	GHSAID        string
 	Success       bool
 	Severity      string
 	CVSS          float64
@@ -32,10 +31,10 @@ type PoCResult struct {
 type pocRunner func(ip string, port int, timeout time.Duration, rule PoCRule) PoCResult
 
 var openClawPoCRunners = map[string]pocRunner{
-	"ws_origin_bypass": pocWSOriginBypass,
-	"ssrf_proxy":       pocSSRF,
+	"ws_origin_bypass":         pocWSOriginBypass,
+	"ssrf_proxy":               pocSSRF,
 	"avatar_symlink_traversal": pocAvatarSymlinkTraversal,
-	"unauth_api":       pocUnauthAPI,
+	"unauth_api":               pocUnauthAPI,
 }
 
 func RunPoCs(ip string, port int, agentType string, timeout time.Duration) []PoCResult {
@@ -305,7 +304,6 @@ func newPoCResult(rule PoCRule) PoCResult {
 		Name:        rule.Name,
 		CVEID:       rule.CVEID,
 		CNNVDID:     rule.CNNVDID,
-		GHSAID:      rule.GHSAID,
 		Severity:    rule.Severity,
 		CVSS:        rule.CVSS,
 		Remediation: rule.Remediation,

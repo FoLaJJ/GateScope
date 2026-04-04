@@ -35,6 +35,7 @@ import { useImportTargets } from '@/api/targets'
 import { TASK_STATUS_CONFIG } from '@/constants'
 import { useURLQueryState } from '@/hooks/useURLQueryState'
 import StatusBadge from '@/components/StatusBadge'
+import { displayProgressPercent, displayUpperUnknown } from '@/utils/display'
 import type { Task, CreateTaskRequest, TaskStatus, TaskType, TaskListParams } from '@/types'
 
 type TaskQueryState = {
@@ -168,7 +169,7 @@ export default function Tasks() {
       dataIndex: 'scan_depth',
       key: 'scan_depth',
       width: 70,
-      render: (value: string) => <Tag>{value?.toUpperCase()}</Tag>,
+      render: (value: string) => <Tag>{displayUpperUnknown(value)}</Tag>,
     },
     { title: '目标', dataIndex: 'total_targets', key: 'total_targets', width: 70, align: 'right' },
     {
@@ -201,16 +202,16 @@ export default function Tasks() {
       dataIndex: 'progress_percent',
       key: 'progress',
       width: 160,
-      render: (value: number, record: Task) =>
+      render: (value: unknown, record: Task) =>
         record.status === 'running' ? (
-          <Progress percent={Math.round(value)} size="small" status="active" />
+          <Progress percent={displayProgressPercent(value)} size="small" status="active" />
         ) : record.status === 'completed' ? (
           <Progress percent={100} size="small" />
         ) : record.status === 'failed' ? (
-          <Progress percent={Math.round(value)} size="small" status="exception" />
+          <Progress percent={displayProgressPercent(value)} size="small" status="exception" />
         ) : record.status === 'cancelled' ? (
           <Tooltip title="已取消">
-            <Progress percent={Math.round(value)} size="small" status="exception" strokeColor="#999" />
+            <Progress percent={displayProgressPercent(value)} size="small" status="exception" strokeColor="#999" />
           </Tooltip>
         ) : (
           '-'

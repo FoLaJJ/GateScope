@@ -41,29 +41,11 @@ func TestMatchCVEs_PartiallyPatched(t *testing.T) {
 	assert.Contains(t, matchedCVEs, "CVE-2026-26324", "should still be affected (fix is 2026.2.14)")
 }
 
-func TestMatchCVEs_GHSAOnlyRuleCarriesIdentifier(t *testing.T) {
-	results := MatchCVEs("2026.4.1")
-	for _, r := range results {
-		if r.CVE.GHSAID == "GHSA-jj6q-rrrf-h66h" {
-			assert.True(t, r.Matched)
-			assert.Empty(t, r.CVE.CVEID)
-			return
-		}
+func TestMatchCVEs_RepositoryRulesUseCVEAsCanonicalIdentifier(t *testing.T) {
+	results := MatchCVEs("2026.3.10")
+	for _, result := range results {
+		assert.NotEmpty(t, result.CVE.ID)
+		assert.NotEmpty(t, result.CVE.CVEID)
+		assert.Equal(t, result.CVE.CVEID, result.CVE.ID)
 	}
-	t.Fatalf("GHSA-jj6q-rrrf-h66h rule not found")
-}
-
-func TestMatchCVEs_UsesVerifiedOpenClawGHSAIdentifiers(t *testing.T) {
-	results := MatchCVEs("2026.4.1")
-	foundNew := false
-	for _, r := range results {
-		switch r.CVE.GHSAID {
-		case "GHSA-fvx6-pj3r-5q4q":
-			assert.True(t, r.Matched)
-			foundNew = true
-		case "GHSA-2f7j-h9x4-jh34", "GHSA-9jpj-p5w9-9rfc":
-			t.Fatalf("stale GHSA identifier still present in rules: %s", r.CVE.GHSAID)
-		}
-	}
-	assert.True(t, foundNew, "verified GHSA-fvx6-pj3r-5q4q rule should be loaded")
 }

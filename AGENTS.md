@@ -12,7 +12,6 @@ AgentScan is an AI Agent network asset discovery and security audit platform tar
 ```
 AgentScan/
 ├── cmd/agentscan/              # CLI entry (Cobra: server/scan/migrate/version)
-├── cmd/mock-openclaw/          # Mock OpenClaw server for testing
 ├── configs/                    # Config template (config.yaml.example)
 ├── _data/                      # Runtime data (db + config overrides, gitignored)
 ├── docs/                       # Design docs (gitignored, local only)
@@ -39,7 +38,6 @@ AgentScan/
 │   ├── store/                  # GORM persistence (SQLite/PostgreSQL + versioned migration)
 │   └── task/                   # Task manager + Cron scheduler
 ├── web/                        # Frontend (React + Ant Design + ECharts)
-├── third_party/openclaw-src/   # OpenClaw source (git submodule, reference only)
 └── scripts/                    # Utility scripts
 ```
 
@@ -69,7 +67,6 @@ AgentScan/
 - Start server: `go run cmd/agentscan/main.go server`
 - Quick scan: `go run cmd/agentscan/main.go scan --targets 192.168.1.0/24`
 - Run migrations: `go run cmd/agentscan/main.go migrate`
-- Mock OpenClaw: `go run cmd/mock-openclaw/main.go` (listens on :18789)
 - CGO is required for SQLite (`mattn/go-sqlite3`).
 
 ### Frontend (React)
@@ -81,10 +78,9 @@ AgentScan/
 
 ### Full-stack dev
 
-1. Start mock: `go run cmd/mock-openclaw/main.go`
-2. Start backend: `go run cmd/agentscan/main.go server`
-3. Start frontend: `cd web && npm run dev`
-4. Login: `admin` / `agentscan` (default credentials)
+1. Start backend: `go run cmd/agentscan/main.go server`
+2. Start frontend: `cd web && npm run dev`
+3. Login: `admin` / `agentscan` (default credentials)
 
 ## Configuration
 
@@ -135,7 +131,6 @@ AgentScan/
 - `configs/config.yaml.example` contains dev-only default credentials; these must be changed in production.
 - `auth.jwt_secret` validation enforces non-default in postgres mode.
 - Never commit real API keys (FOFA, GeoIP license keys).
-- The mock OpenClaw server (`cmd/mock-openclaw/`) is for testing only; it simulates vulnerabilities.
 
 ## Scanner Architecture
 
@@ -156,7 +151,6 @@ Pipeline orchestration lives in `internal/engine/pipeline.go`. It emits events v
 
 ## Git Submodules
 
-- `third_party/openclaw-src` — OpenClaw source code for reference and feature analysis. Read-only; do not modify.
 
 ## How to Add New Components
 

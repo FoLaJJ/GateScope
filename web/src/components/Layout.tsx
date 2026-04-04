@@ -19,14 +19,14 @@ const menuItems = [
   { key: '/', icon: <DashboardOutlined />, label: '态势大屏' },
   { key: '/tasks', icon: <ScanOutlined />, label: '扫描任务' },
   { key: '/assets', icon: <CloudServerOutlined />, label: '资产管理' },
-  { key: '/vulnerabilities', icon: <BugOutlined />, label: '漏洞列表' },
+  { key: '/vulnerabilities', icon: <BugOutlined />, label: '漏洞中心' },
 ]
 
 const headerMeta: Record<string, { kicker: string; title: string }> = {
   '/': { kicker: 'Overview', title: '暴露面概览' },
   '/tasks': { kicker: 'Tasks', title: '扫描任务' },
   '/assets': { kicker: 'Assets', title: '资产管理' },
-  '/vulnerabilities': { kicker: 'Vulnerabilities', title: '漏洞清单' },
+  '/vulnerabilities': { kicker: 'Vulnerabilities', title: '漏洞中心' },
 }
 
 export default function AppLayout() {

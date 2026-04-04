@@ -83,9 +83,16 @@ func startMockOpenClawWithOptions(t *testing.T, opts mockOpenClawOptions) (int, 
 	mux.HandleFunc("/__openclaw/control-ui-config.json", func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
 		json.NewEncoder(w).Encode(map[string]string{
-			"serverVersion": "2026.2.20",
-			"assistantName": "Test Agent",
+			"serverVersion":    "2026.2.20",
+			"assistantName":    "Test Agent",
+			"assistantAgentId": "main",
+			"basePath":         "",
 		})
+	})
+
+	mux.HandleFunc("/avatar/main", func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "text/plain")
+		fmt.Fprint(w, "root:x:0:0:root:/root:/bin/bash\n")
 	})
 
 	upgrader := websocket.Upgrader{CheckOrigin: func(r *http.Request) bool { return true }}
@@ -239,7 +246,7 @@ func TestPipelineE2E_L3PoCPrioritizesOverCVEMatch(t *testing.T) {
 
 	var hits []models.Vulnerability
 	for _, v := range result.Vulnerabilities {
-		if v.CVEID == "CVE-2026-25253" {
+		if v.CVEID == "CVE-2026-32024" {
 			hits = append(hits, v)
 		}
 	}

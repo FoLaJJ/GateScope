@@ -134,8 +134,12 @@ func MaxRiskLevel(levels ...RiskLevel) RiskLevel {
 	return maxLevel
 }
 
-func DeriveAssetRisk(authMode string, severities []Severity) RiskLevel {
-	derived := RiskFromAuthMode(authMode)
+func DeriveAssetRisk(_ string, severities []Severity) RiskLevel {
+	if len(severities) == 0 {
+		return RiskInfo
+	}
+
+	derived := RiskInfo
 	for _, severity := range severities {
 		derived = MaxRiskLevel(derived, RiskFromSeverity(severity))
 	}

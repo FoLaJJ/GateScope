@@ -112,7 +112,7 @@ func GenerateExcel(data ExcelReportData) (*excelize.File, error) {
 		summaryData = append(summaryData, []string{"漏洞库上游截止", data.RuleCatalog.SourceCutoff})
 	}
 	if data.RuleCatalog.CVECount > 0 || data.RuleCatalog.PoCCount > 0 {
-		summaryData = append(summaryData, []string{"规则库规模", fmt.Sprintf("规则 %d / CVE %d / CNNVD %d / GHSA %d / PoC %d", data.RuleCatalog.RuleCount, data.RuleCatalog.CVECount, data.RuleCatalog.CNNVDCount, data.RuleCatalog.GHSACount, data.RuleCatalog.PoCCount)})
+		summaryData = append(summaryData, []string{"规则库规模", fmt.Sprintf("规则 %d / CVE %d / CNNVD %d / PoC %d", data.RuleCatalog.RuleCount, data.RuleCatalog.CVECount, data.RuleCatalog.CNNVDCount, data.RuleCatalog.PoCCount)})
 	}
 	for i, row := range summaryData {
 		r := i + 4
@@ -190,18 +190,18 @@ func GenerateExcel(data ExcelReportData) (*excelize.File, error) {
 		r := i + 2
 		f.SetCellValue(assetSheet, fmt.Sprintf("A%d", r), a.IP)
 		f.SetCellValue(assetSheet, fmt.Sprintf("B%d", r), a.Port)
-		f.SetCellValue(assetSheet, fmt.Sprintf("C%d", r), a.AgentType)
-		f.SetCellValue(assetSheet, fmt.Sprintf("D%d", r), a.Version)
-		f.SetCellValue(assetSheet, fmt.Sprintf("E%d", r), a.AuthMode)
+		f.SetCellValue(assetSheet, fmt.Sprintf("C%d", r), valueOrDefault(a.AgentType, "未识别"))
+		f.SetCellValue(assetSheet, fmt.Sprintf("D%d", r), valueOrDefault(a.Version, "未查明"))
+		f.SetCellValue(assetSheet, fmt.Sprintf("E%d", r), valueOrDefault(a.AuthMode, "未查明"))
 		f.SetCellValue(assetSheet, fmt.Sprintf("F%d", r), string(a.RiskLevel))
 		riskCell := fmt.Sprintf("F%d", r)
 		if st, ok := riskStyleMap[string(a.RiskLevel)]; ok {
 			f.SetCellStyle(assetSheet, riskCell, riskCell, st)
 		}
 		f.SetCellValue(assetSheet, fmt.Sprintf("G%d", r), fmt.Sprintf("%.0f%%", a.Confidence))
-		f.SetCellValue(assetSheet, fmt.Sprintf("H%d", r), a.AgentID)
-		f.SetCellValue(assetSheet, fmt.Sprintf("I%d", r), a.Country)
-		f.SetCellValue(assetSheet, fmt.Sprintf("J%d", r), a.City)
+		f.SetCellValue(assetSheet, fmt.Sprintf("H%d", r), valueOrDefault(a.AgentID, "未识别"))
+		f.SetCellValue(assetSheet, fmt.Sprintf("I%d", r), valueOrDefault(a.Country, "未获取到"))
+		f.SetCellValue(assetSheet, fmt.Sprintf("J%d", r), valueOrDefault(a.City, "未获取到"))
 		f.SetCellValue(assetSheet, fmt.Sprintf("K%d", r), formatTime(a.FirstSeenAt))
 		f.SetCellValue(assetSheet, fmt.Sprintf("L%d", r), formatTime(a.LastSeenAt))
 	}
@@ -210,7 +210,7 @@ func GenerateExcel(data ExcelReportData) (*excelize.File, error) {
 	// ===== Vulnerabilities Sheet =====
 	vulnSheet := "漏洞详情"
 	f.NewSheet(vulnSheet)
-	vulnHeaders := []string{"IP", "端口", "Agent类型", "资产定位", "CVE编号", "CNNVD编号", "GHSA编号", "标题", "严重等级", "CVSS", "判定依据", "中文描述", "英文描述", "修复建议", "证据", "检测时间"}
+	vulnHeaders := []string{"IP", "端口", "Agent类型", "资产定位", "CVE编号", "CNNVD编号", "标题", "严重等级", "CVSS", "判定依据", "中文描述", "英文描述", "修复建议", "证据", "检测时间"}
 	for i, h := range vulnHeaders {
 		cell := colName(i) + "1"
 		f.SetCellValue(vulnSheet, cell, h)
@@ -221,47 +221,46 @@ func GenerateExcel(data ExcelReportData) (*excelize.File, error) {
 		asset := assetIndex[v.AssetID]
 		f.SetCellValue(vulnSheet, fmt.Sprintf("A%d", r), asset.IP)
 		f.SetCellValue(vulnSheet, fmt.Sprintf("B%d", r), asset.Port)
-		f.SetCellValue(vulnSheet, fmt.Sprintf("C%d", r), asset.AgentType)
+		f.SetCellValue(vulnSheet, fmt.Sprintf("C%d", r), valueOrDefault(asset.AgentType, "未识别"))
 		f.SetCellValue(vulnSheet, fmt.Sprintf("D%d", r), formatAssetLabel(asset, v.AssetID))
-		f.SetCellValue(vulnSheet, fmt.Sprintf("E%d", r), v.CVEID)
-		f.SetCellValue(vulnSheet, fmt.Sprintf("F%d", r), v.CNNVDID)
-		f.SetCellValue(vulnSheet, fmt.Sprintf("G%d", r), v.GHSAID)
-		f.SetCellValue(vulnSheet, fmt.Sprintf("H%d", r), v.Title)
-		f.SetCellValue(vulnSheet, fmt.Sprintf("I%d", r), string(v.Severity))
-		sevCell := fmt.Sprintf("I%d", r)
+		f.SetCellValue(vulnSheet, fmt.Sprintf("E%d", r), valueOrDefault(v.CVEID, describeInternalFinding(v.CheckType)))
+		f.SetCellValue(vulnSheet, fmt.Sprintf("F%d", r), valueOrDefault(v.CNNVDID, "暂无对应CNNVD"))
+		f.SetCellValue(vulnSheet, fmt.Sprintf("G%d", r), valueOrDefault(v.Title, "未识别漏洞标题"))
+		f.SetCellValue(vulnSheet, fmt.Sprintf("H%d", r), string(v.Severity))
+		sevCell := fmt.Sprintf("H%d", r)
 		if st, ok := riskStyleMap[string(v.Severity)]; ok {
 			f.SetCellStyle(vulnSheet, sevCell, sevCell, st)
 		}
-		f.SetCellValue(vulnSheet, fmt.Sprintf("J%d", r), v.CVSS)
+		f.SetCellValue(vulnSheet, fmt.Sprintf("I%d", r), v.CVSS)
 		ctLabel := checkLabels[v.CheckType]
 		if ctLabel == "" {
 			ctLabel = v.CheckType
 		}
-		f.SetCellValue(vulnSheet, fmt.Sprintf("K%d", r), ctLabel)
-		f.SetCellValue(vulnSheet, fmt.Sprintf("L%d", r), v.DescriptionZH)
+		f.SetCellValue(vulnSheet, fmt.Sprintf("J%d", r), ctLabel)
+		f.SetCellValue(vulnSheet, fmt.Sprintf("K%d", r), valueOrDefault(v.DescriptionZH, "未提供中文描述"))
+		f.SetCellStyle(vulnSheet, fmt.Sprintf("K%d", r), fmt.Sprintf("K%d", r), wrapStyle)
+		f.SetCellValue(vulnSheet, fmt.Sprintf("L%d", r), valueOrDefault(v.Description, "No English description available"))
 		f.SetCellStyle(vulnSheet, fmt.Sprintf("L%d", r), fmt.Sprintf("L%d", r), wrapStyle)
-		f.SetCellValue(vulnSheet, fmt.Sprintf("M%d", r), v.Description)
+		f.SetCellValue(vulnSheet, fmt.Sprintf("M%d", r), valueOrDefault(v.Remediation, "未提供修复建议"))
 		f.SetCellStyle(vulnSheet, fmt.Sprintf("M%d", r), fmt.Sprintf("M%d", r), wrapStyle)
-		f.SetCellValue(vulnSheet, fmt.Sprintf("N%d", r), v.Remediation)
+		f.SetCellValue(vulnSheet, fmt.Sprintf("N%d", r), valueOrDefault(v.Evidence, "未采集到证据"))
 		f.SetCellStyle(vulnSheet, fmt.Sprintf("N%d", r), fmt.Sprintf("N%d", r), wrapStyle)
-		f.SetCellValue(vulnSheet, fmt.Sprintf("O%d", r), v.Evidence)
-		f.SetCellStyle(vulnSheet, fmt.Sprintf("O%d", r), fmt.Sprintf("O%d", r), wrapStyle)
-		f.SetCellValue(vulnSheet, fmt.Sprintf("P%d", r), formatTime(v.DetectedAt))
+		f.SetCellValue(vulnSheet, fmt.Sprintf("O%d", r), formatTime(v.DetectedAt))
 	}
 	f.SetColWidth(vulnSheet, "A", "A", 18)
 	f.SetColWidth(vulnSheet, "B", "B", 10)
 	f.SetColWidth(vulnSheet, "C", "D", 18)
-	f.SetColWidth(vulnSheet, "E", "G", 18)
-	f.SetColWidth(vulnSheet, "H", "H", 35)
-	f.SetColWidth(vulnSheet, "I", "K", 14)
-	f.SetColWidth(vulnSheet, "L", "N", 40)
-	f.SetColWidth(vulnSheet, "O", "O", 60)
-	f.SetColWidth(vulnSheet, "P", "P", 16)
+	f.SetColWidth(vulnSheet, "E", "F", 18)
+	f.SetColWidth(vulnSheet, "G", "G", 35)
+	f.SetColWidth(vulnSheet, "H", "J", 14)
+	f.SetColWidth(vulnSheet, "K", "M", 40)
+	f.SetColWidth(vulnSheet, "N", "N", 60)
+	f.SetColWidth(vulnSheet, "O", "O", 16)
 
 	// ===== Remediation Sheet =====
 	remSheet := "修复清单"
 	f.NewSheet(remSheet)
-	remHeaders := []string{"优先级", "IP", "端口", "Agent类型", "CVE编号", "CNNVD编号", "GHSA编号", "漏洞标题", "严重等级", "CVSS", "修复建议", "影响资产"}
+	remHeaders := []string{"优先级", "IP", "端口", "Agent类型", "CVE编号", "CNNVD编号", "漏洞标题", "严重等级", "CVSS", "修复建议", "影响资产"}
 	for i, h := range remHeaders {
 		cell := colName(i) + "1"
 		f.SetCellValue(remSheet, cell, h)
@@ -279,30 +278,29 @@ func GenerateExcel(data ExcelReportData) (*excelize.File, error) {
 			f.SetCellValue(remSheet, fmt.Sprintf("A%d", r), priority)
 			f.SetCellValue(remSheet, fmt.Sprintf("B%d", r), asset.IP)
 			f.SetCellValue(remSheet, fmt.Sprintf("C%d", r), asset.Port)
-			f.SetCellValue(remSheet, fmt.Sprintf("D%d", r), asset.AgentType)
-			f.SetCellValue(remSheet, fmt.Sprintf("E%d", r), v.CVEID)
-			f.SetCellValue(remSheet, fmt.Sprintf("F%d", r), v.CNNVDID)
-			f.SetCellValue(remSheet, fmt.Sprintf("G%d", r), v.GHSAID)
-			f.SetCellValue(remSheet, fmt.Sprintf("H%d", r), v.Title)
-			f.SetCellValue(remSheet, fmt.Sprintf("I%d", r), string(v.Severity))
+			f.SetCellValue(remSheet, fmt.Sprintf("D%d", r), valueOrDefault(asset.AgentType, "未识别"))
+			f.SetCellValue(remSheet, fmt.Sprintf("E%d", r), valueOrDefault(v.CVEID, describeInternalFinding(v.CheckType)))
+			f.SetCellValue(remSheet, fmt.Sprintf("F%d", r), valueOrDefault(v.CNNVDID, "暂无对应CNNVD"))
+			f.SetCellValue(remSheet, fmt.Sprintf("G%d", r), valueOrDefault(v.Title, "未识别漏洞标题"))
+			f.SetCellValue(remSheet, fmt.Sprintf("H%d", r), string(v.Severity))
 			if st, ok := riskStyleMap[string(v.Severity)]; ok {
-				f.SetCellStyle(remSheet, fmt.Sprintf("I%d", r), fmt.Sprintf("I%d", r), st)
+				f.SetCellStyle(remSheet, fmt.Sprintf("H%d", r), fmt.Sprintf("H%d", r), st)
 			}
-			f.SetCellValue(remSheet, fmt.Sprintf("J%d", r), v.CVSS)
-			f.SetCellValue(remSheet, fmt.Sprintf("K%d", r), v.Remediation)
-			f.SetCellStyle(remSheet, fmt.Sprintf("K%d", r), fmt.Sprintf("K%d", r), wrapStyle)
-			f.SetCellValue(remSheet, fmt.Sprintf("L%d", r), formatAssetLabel(asset, v.AssetID))
+			f.SetCellValue(remSheet, fmt.Sprintf("I%d", r), v.CVSS)
+			f.SetCellValue(remSheet, fmt.Sprintf("J%d", r), valueOrDefault(v.Remediation, "未提供修复建议"))
+			f.SetCellStyle(remSheet, fmt.Sprintf("J%d", r), fmt.Sprintf("J%d", r), wrapStyle)
+			f.SetCellValue(remSheet, fmt.Sprintf("K%d", r), formatAssetLabel(asset, v.AssetID))
 			priority++
 		}
 	}
 	f.SetColWidth(remSheet, "A", "A", 8)
 	f.SetColWidth(remSheet, "B", "B", 18)
 	f.SetColWidth(remSheet, "C", "C", 10)
-	f.SetColWidth(remSheet, "D", "G", 18)
-	f.SetColWidth(remSheet, "H", "H", 35)
-	f.SetColWidth(remSheet, "I", "J", 12)
-	f.SetColWidth(remSheet, "K", "K", 45)
-	f.SetColWidth(remSheet, "L", "L", 28)
+	f.SetColWidth(remSheet, "D", "F", 18)
+	f.SetColWidth(remSheet, "G", "G", 35)
+	f.SetColWidth(remSheet, "H", "I", 12)
+	f.SetColWidth(remSheet, "J", "J", 45)
+	f.SetColWidth(remSheet, "K", "K", 28)
 
 	return f, nil
 }
@@ -329,14 +327,32 @@ func formatAssetLabel(asset models.Asset, fallbackID string) string {
 	if fallbackID != "" {
 		return fallbackID
 	}
-	return "-"
+	return "未关联到资产"
 }
 
 func formatTime(t time.Time) string {
 	if t.IsZero() {
-		return ""
+		return "未获取到"
 	}
 	return t.Format("2006-01-02 15:04")
+}
+
+func valueOrDefault(value, fallback string) string {
+	if value == "" {
+		return fallback
+	}
+	return value
+}
+
+func describeInternalFinding(checkType string) string {
+	switch checkType {
+	case "auth_check", "skills_check":
+		return "内置暴露检查，无对应CVE"
+	case "poc_verify":
+		return "PoC已命中，但未提供外部编号"
+	default:
+		return "暂无漏洞编号"
+	}
 }
 
 func colName(i int) string {

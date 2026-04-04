@@ -10,7 +10,8 @@ import StatCards from '@/components/StatCards'
 import StatusBadge from '@/components/StatusBadge'
 import RiskTag from '@/components/RiskTag'
 import { RISK_LABELS, RISK_LEVELS } from '@/constants'
-import { getPreferredDescription, listVulnerabilityIdentifiers } from '@/utils/vuln'
+import { displayCVSS, displayUpperUnknown } from '@/utils/display'
+import { describeIdentifierState, getPreferredDescription, listVulnerabilityIdentifiers } from '@/utils/vuln'
 import type { Task, Vulnerability } from '@/types'
 
 export default function Dashboard() {
@@ -23,8 +24,8 @@ export default function Dashboard() {
   const assetRiskChartColors = {
     critical: '#b42318',
     high: '#d92d20',
-    medium: '#98a2b3',
-    low: '#12b76a',
+    medium: '#f5b301',
+    low: '#2563eb',
     info: '#039855',
   } as const
   const vulnSeverityChartColors = {
@@ -45,6 +46,7 @@ export default function Dashboard() {
   const criticalCount = stats?.risk_distribution?.critical ?? 0
   const highCount = stats?.risk_distribution?.high ?? 0
   const riskyAssets = criticalCount + highCount
+  const riskyAssetRatio = stats?.total_assets ? `${Math.round((riskyAssets / stats.total_assets) * 100)}%` : '0%'
 
   const riskData = RISK_LEVELS.filter((k) => (stats?.risk_distribution?.[k] ?? 0) > 0).map((k) => ({
     name: RISK_LABELS[k],
@@ -143,12 +145,12 @@ export default function Dashboard() {
         <div className="dashboard-aside">
           <div className="dashboard-signal">
             <span>高风险资产占比</span>
-            <strong>{stats?.total_assets ? `${Math.round((riskyAssets / stats.total_assets) * 100)}%` : '0%'}</strong>
+            <strong>{riskyAssetRatio}</strong>
             <Typography.Text type="secondary">超危和高危资产共 {riskyAssets} 台</Typography.Text>
           </div>
           <div className="dashboard-signal">
             <span>最新任务状态</span>
-            <strong>{recentTasks[0]?.status ? recentTasks[0].status.toUpperCase() : 'IDLE'}</strong>
+            <strong>{displayUpperUnknown(recentTasks[0]?.status, 'IDLE')}</strong>
             <Typography.Text type="secondary">
               {recentTasks[0]?.name ? `任务 · ${recentTasks[0].name}` : '当前暂无新任务记录'}
             </Typography.Text>
@@ -259,7 +261,7 @@ export default function Dashboard() {
                     description={
                       <Space size="small">
                         <StatusBadge status={t.status} showIcon={false} />
-                        <Tag>{t.scan_depth?.toUpperCase()}</Tag>
+                        <Tag>{displayUpperUnknown(t.scan_depth)}</Tag>
                         {t.found_agents > 0 && <Tag color="blue">{t.found_agents} Agent</Tag>}
                         {t.found_vulns > 0 && <Tag color="red">{t.found_vulns} 漏洞</Tag>}
                       </Space>
@@ -290,6 +292,7 @@ export default function Dashboard() {
               dataSource={recentVulns}
               renderItem={(v: Vulnerability) => {
                 const identifiers = listVulnerabilityIdentifiers(v)
+                const identifierState = describeIdentifierState(v)
                 return (
                   <List.Item>
                     <List.Item.Meta
@@ -305,14 +308,18 @@ export default function Dashboard() {
                       }
                       description={
                         <Space size="small">
-                          {identifiers.map((identifier) => (
-                            <Tag color="geekblue" key={identifier.key}>
-                              <a className="identifier-link" href={identifier.href} target="_blank" rel="noreferrer">
-                                {identifier.label}
-                              </a>
-                            </Tag>
-                          ))}
-                          <Typography.Text type="secondary">CVSS {v.cvss?.toFixed(1)}</Typography.Text>
+                          {identifiers.length > 0
+                            ? identifiers.map((identifier) => (
+                                <Tag color="geekblue" key={identifier.key}>
+                                  <a className="identifier-link" href={identifier.href} target="_blank" rel="noreferrer">
+                                    {identifier.label}
+                                  </a>
+                                </Tag>
+                              ))
+                            : identifierState && <Tag>{identifierState}</Tag>}
+                          <Typography.Text type="secondary">
+                            CVSS {displayCVSS(v.cvss)}
+                          </Typography.Text>
                         </Space>
                       }
                     />

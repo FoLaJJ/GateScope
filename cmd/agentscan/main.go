@@ -168,7 +168,7 @@ func scanCmd() *cobra.Command {
 			}
 
 			fmt.Println("╔══════════════════════════════════════════════════════════╗")
-			fmt.Println("║            GateScope  v0.1.0                            ║")
+			fmt.Println("║            GateScope  v0.4.0                            ║")
 			fmt.Println("║    AI Agent Discovery & Security Audit                   ║")
 			fmt.Println("╚══════════════════════════════════════════════════════════╝")
 			fmt.Println()
@@ -275,7 +275,7 @@ func versionCmd() *cobra.Command {
 		Use:   "version",
 		Short: "显示版本信息",
 		Run: func(cmd *cobra.Command, args []string) {
-			fmt.Println("GateScope v0.1.0")
+			fmt.Println("GateScope v0.4.0")
 		},
 	}
 }

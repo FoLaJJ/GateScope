@@ -93,6 +93,7 @@ func (s *Server) setupRouter() {
 			protected.GET("/vulns", s.handleListVulns)
 			protected.GET("/vulns/:id", s.handleGetVuln)
 			protected.GET("/rules/catalog", s.handleRuleCatalog)
+			protected.GET("/rules/catalog/entries", s.handleRuleCatalogEntries)
 
 			protected.GET("/dashboard/stats", s.handleDashboardStats)
 

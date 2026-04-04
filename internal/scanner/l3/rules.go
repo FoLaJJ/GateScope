@@ -23,7 +23,6 @@ type PoCRule struct {
 	Name        string  `yaml:"name"`
 	CVEID       string  `yaml:"cve_id"`
 	CNNVDID     string  `yaml:"cnnvd_id"`
-	GHSAID      string  `yaml:"ghsa_id"`
 	Severity    string  `yaml:"severity"`
 	CVSS        float64 `yaml:"cvss"`
 	Remediation string  `yaml:"remediation"`
@@ -46,10 +45,8 @@ type ruleIDMapping struct {
 	RuleID       string   `yaml:"rule_id"`
 	CVEID        string   `yaml:"cve_id"`
 	CNNVDID      string   `yaml:"cnnvd_id"`
-	GHSAID       string   `yaml:"ghsa_id"`
 	CVEAliases   []string `yaml:"cve_aliases"`
 	CNNVDAliases []string `yaml:"cnnvd_aliases"`
-	GHSAAliases  []string `yaml:"ghsa_aliases"`
 }
 
 type idMappingsFile struct {
@@ -75,7 +72,6 @@ var (
 	loadedRuleIssues           []string
 	loadedCVEAliases           map[string]string
 	loadedCNNVDAliases         map[string]string
-	loadedGHSAAliases          map[string]string
 )
 
 type RuleCatalogMetadata struct {
@@ -87,10 +83,23 @@ type RuleCatalogMetadata struct {
 	RuleCount    int      `json:"rule_count"`
 	CVECount     int      `json:"cve_count"`
 	CNNVDCount   int      `json:"cnnvd_count"`
-	GHSACount    int      `json:"ghsa_count"`
 	PoCCount     int      `json:"poc_count"`
 	Consistent   bool     `json:"consistent"`
 	Issues       []string `json:"issues"`
+}
+
+type RuleCatalogEntry struct {
+	ID             string  `json:"id"`
+	CVEID          string  `json:"cve_id"`
+	CNNVDID        string  `json:"cnnvd_id,omitempty"`
+	Title          string  `json:"title"`
+	Severity       string  `json:"severity"`
+	CVSS           float64 `json:"cvss"`
+	AffectedBefore string  `json:"affected_before,omitempty"`
+	Description    string  `json:"description,omitempty"`
+	DescriptionZH  string  `json:"description_zh,omitempty"`
+	Remediation    string  `json:"remediation,omitempty"`
+	HasLocalPoC    bool    `json:"has_local_poc"`
 }
 
 func getOpenClawCVEs() []CVEEntry {
@@ -129,11 +138,31 @@ func GetRuleCatalogMetadata() RuleCatalogMetadata {
 		RuleCount:    len(loadedOpenClawCVEs),
 		CVECount:     countRulesWith(func(rule CVEEntry) bool { return strings.TrimSpace(rule.CVEID) != "" }),
 		CNNVDCount:   countRulesWith(func(rule CVEEntry) bool { return strings.TrimSpace(rule.CNNVDID) != "" }),
-		GHSACount:    countRulesWith(func(rule CVEEntry) bool { return strings.TrimSpace(rule.GHSAID) != "" }),
 		PoCCount:     len(loadedPoCRules),
 		Consistent:   len(issues) == 0,
 		Issues:       issues,
 	}
+}
+
+func GetRuleCatalogEntries() []RuleCatalogEntry {
+	rulesOnce.Do(loadRules)
+	entries := make([]RuleCatalogEntry, 0, len(loadedOpenClawCVEs))
+	for _, rule := range loadedOpenClawCVEs {
+		entries = append(entries, RuleCatalogEntry{
+			ID:             rule.ID,
+			CVEID:          rule.CVEID,
+			CNNVDID:        rule.CNNVDID,
+			Title:          rule.Title,
+			Severity:       rule.Severity,
+			CVSS:           rule.CVSS,
+			AffectedBefore: rule.AffectedBefore,
+			Description:    rule.Description,
+			DescriptionZH:  rule.DescriptionZH,
+			Remediation:    rule.Remediation,
+			HasLocalPoC:    hasPoCForCVE(rule.CVEID),
+		})
+	}
+	return entries
 }
 
 func getPoCRule(id string) (PoCRule, bool) {
@@ -166,7 +195,6 @@ func loadRules() {
 	loadedRuleIssues = nil
 	loadedCVEAliases = map[string]string{}
 	loadedCNNVDAliases = map[string]string{}
-	loadedGHSAAliases = map[string]string{}
 
 	var cveFile cveRulesFile
 	if err := readRulesFile("openclaw-cves.yaml", &cveFile); err == nil && len(cveFile.CVEs) > 0 {
@@ -232,9 +260,6 @@ func applyIDMappings() {
 			if v := strings.TrimSpace(mapping.CNNVDID); v != "" {
 				rule.CNNVDID = v
 			}
-			if v := strings.TrimSpace(mapping.GHSAID); v != "" {
-				rule.GHSAID = v
-			}
 			applied = true
 			break
 		}
@@ -246,7 +271,6 @@ func applyIDMappings() {
 
 		registerIdentifierAliases(ruleID, "cve_alias", mapping.CVEAliases, loadedCVEAliases)
 		registerIdentifierAliases(ruleID, "cnnvd_alias", mapping.CNNVDAliases, loadedCNNVDAliases)
-		registerIdentifierAliases(ruleID, "ghsa_alias", mapping.GHSAAliases, loadedGHSAAliases)
 	}
 }
 
@@ -268,7 +292,6 @@ func validateRuleIdentifiers() {
 	seenRuleIDs := make(map[string]struct{}, len(loadedOpenClawCVEs))
 	seenCVEs := make(map[string]string, len(loadedOpenClawCVEs))
 	seenCNNVDs := make(map[string]string, len(loadedOpenClawCVEs))
-	seenGHSAs := make(map[string]string, len(loadedOpenClawCVEs))
 
 	for _, rule := range loadedOpenClawCVEs {
 		ruleID := strings.TrimSpace(rule.ID)
@@ -281,7 +304,6 @@ func validateRuleIdentifiers() {
 		}
 		recordIdentifierIssue(seenCVEs, strings.TrimSpace(rule.CVEID), ruleID, "cve_id")
 		recordIdentifierIssue(seenCNNVDs, strings.TrimSpace(rule.CNNVDID), ruleID, "cnnvd_id")
-		recordIdentifierIssue(seenGHSAs, strings.TrimSpace(rule.GHSAID), ruleID, "ghsa_id")
 	}
 }
 
@@ -312,7 +334,6 @@ func normalizePoCRules() {
 		rule.Severity = cve.Severity
 		rule.CVSS = cve.CVSS
 		rule.CNNVDID = cve.CNNVDID
-		rule.GHSAID = cve.GHSAID
 		rule.Remediation = cve.Remediation
 	}
 }
@@ -323,15 +344,10 @@ func normalizeOpenClawCVEs() {
 		if rule.CVEID == "" && strings.HasPrefix(rule.ID, "CVE-") {
 			rule.CVEID = rule.ID
 		}
-		if rule.GHSAID == "" && strings.HasPrefix(rule.ID, "GHSA-") {
-			rule.GHSAID = rule.ID
-		}
 		if rule.ID == "" {
 			switch {
 			case rule.CVEID != "":
 				rule.ID = rule.CVEID
-			case rule.GHSAID != "":
-				rule.ID = rule.GHSAID
 			case rule.CNNVDID != "":
 				rule.ID = rule.CNNVDID
 			}
@@ -431,5 +447,4 @@ func resetLoadedRulesForTests() {
 	loadedRuleIssues = nil
 	loadedCVEAliases = nil
 	loadedCNNVDAliases = nil
-	loadedGHSAAliases = nil
 }

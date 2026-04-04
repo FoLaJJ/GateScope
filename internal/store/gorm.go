@@ -316,10 +316,8 @@ func (s *gormStore) ListVulnerabilities(ctx context.Context, filter VulnFilter) 
 			q = q.Where("cve_id = ?", filter.Identifier)
 		case "cnnvd":
 			q = q.Where("cnnvd_id = ?", filter.Identifier)
-		case "ghsa":
-			q = q.Where("ghsa_id = ?", filter.Identifier)
 		default:
-			q = q.Where("cve_id = ? OR cnnvd_id = ? OR ghsa_id = ?", filter.Identifier, filter.Identifier, filter.Identifier)
+			q = q.Where("cve_id = ? OR cnnvd_id = ?", filter.Identifier, filter.Identifier)
 		}
 	}
 	if filter.CheckType != "" {

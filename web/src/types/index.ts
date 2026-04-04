@@ -12,6 +12,7 @@ export type {
   Asset,
   Vulnerability,
   RuleCatalogMetadata,
+  RuleCatalogEntry,
   User,
   DashboardStats,
   TargetImportResult,

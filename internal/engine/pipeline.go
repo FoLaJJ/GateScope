@@ -509,7 +509,7 @@ func agentToAsset(agent scanner.AgentInfo, taskID string) models.Asset {
 		AuthMode:     agent.AuthMode,
 		AgentID:      agent.AgentID,
 		Confidence:   agent.Score,
-		RiskLevel:    models.RiskFromAuthMode(agent.AuthMode),
+		RiskLevel:    models.RiskInfo,
 		Status:       models.AssetStatusActive,
 		ProbeDetails: probeMap,
 		Metadata:     meta,

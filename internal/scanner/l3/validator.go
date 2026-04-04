@@ -50,7 +50,6 @@ func Validate(input ValidationInput, cfg ValidatorConfig) ValidationOutput {
 				TaskID:        input.TaskID,
 				CVEID:         poc.CVEID,
 				CNNVDID:       poc.CNNVDID,
-				GHSAID:        poc.GHSAID,
 				Title:         fmt.Sprintf("[PoC] %s", poc.Name),
 				Severity:      models.Severity(poc.Severity),
 				CVSS:          poc.CVSS,
@@ -81,7 +80,6 @@ func Validate(input ValidationInput, cfg ValidatorConfig) ValidationOutput {
 				TaskID:        input.TaskID,
 				CVEID:         cr.CVE.CVEID,
 				CNNVDID:       cr.CVE.CNNVDID,
-				GHSAID:        cr.CVE.GHSAID,
 				Title:         cr.CVE.Title,
 				Severity:      models.Severity(cr.CVE.Severity),
 				CVSS:          cr.CVE.CVSS,
@@ -242,8 +240,8 @@ func vulnIdentity(vuln models.Vulnerability) string {
 		return "cve:" + vuln.CVEID
 	case vuln.CNNVDID != "":
 		return "cnnvd:" + vuln.CNNVDID
-	case vuln.GHSAID != "":
-		return "ghsa:" + vuln.GHSAID
+	case strings.TrimSpace(vuln.Title) != "":
+		return "title:" + strings.TrimSpace(vuln.Title) + "|check:" + strings.TrimSpace(vuln.CheckType)
 	default:
 		return ""
 	}

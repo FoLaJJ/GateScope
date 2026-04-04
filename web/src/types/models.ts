@@ -114,7 +114,6 @@ export interface Vulnerability {
   asset_label?: string
   cve_id?: string
   cnnvd_id?: string
-  ghsa_id?: string
   title: string
   description?: string
   description_zh?: string
@@ -135,10 +134,23 @@ export interface RuleCatalogMetadata {
   rule_count: number
   cve_count: number
   cnnvd_count: number
-  ghsa_count: number
   poc_count: number
   consistent: boolean
   issues: string[]
+}
+
+export interface RuleCatalogEntry {
+  id: string
+  cve_id: string
+  cnnvd_id?: string
+  title: string
+  severity: Severity
+  cvss: number
+  affected_before?: string
+  description?: string
+  description_zh?: string
+  remediation?: string
+  has_local_poc: boolean
 }
 
 export interface User {

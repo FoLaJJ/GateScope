@@ -66,7 +66,7 @@ export interface VulnListParams extends PaginationParams {
   asset_id?: string
   severity?: Severity
   identifier?: string
-  identifier_type?: 'cve' | 'cnnvd' | 'ghsa'
+  identifier_type?: 'cve' | 'cnnvd'
   cve_id?: string
   check_type?: CheckType
 }
